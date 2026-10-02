@@ -1,5 +1,9 @@
 # Floating Ayah
 
+![Floating Ayah's transparent Ayat al-Kursi overlay over the Claude Code terminal demo](assets/readme-banner.png)
+
+*Web demo: a code-built Claude Code terminal with Floating Ayah's transparent, word-synchronized Quran overlay.*
+
 Native macOS menu-bar Quran player. Arabic ayahs only — no translation.
 
 ## Build from Source
@@ -150,6 +154,17 @@ FLOATING_AYAH_LIVE_TEST=1 swift test --filter ReciterTests
 ```
 
 Tests cover catalog completeness/order, audio filename mapping, within-surah navigation boundaries, compact fixed-width wrapping, timed word mapping including pauses/repeated phrases/waqaf/basmalah, native scroll reset/follow, timing corpus compatibility, font registration/persistence/measurement, configurable width and appearance persistence, neighboring-ayah range offsets and dimming, offline file validation/persistence/resume across surahs, full-Quran navigation modes, exact word-marker movement/removal, whole-window drag setup, configurable spacing/number size and backward-compatible appearance migration, and saved-state validation. Actual sound quality, all qari recordings, fullscreen behavior, and multi-monitor placement require on-device checks.
+
+## License
+
+The original application and website source code is licensed under the
+[MIT License](LICENSE). Copyright © 2026 Utsman (utsmannn).
+
+Third-party resources retain their own licenses and terms: Amiri Quran is
+licensed under SIL OFL 1.1, and quran-align timing data is licensed under
+CC BY 4.0. Quran text and recitation recordings are not relicensed under MIT;
+see [resource credits](Sources/FloatingAyah/Resources/SOURCES.md) and the bundled
+license files for attribution and upstream terms.
 
 ## Structure
 

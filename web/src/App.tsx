@@ -4,6 +4,8 @@ import { ClaudeCodeTerminal } from "./components/ClaudeCodeTerminal";
 import { FloatingAyahOverlay } from "./components/FloatingAyahOverlay";
 import { AYAT_KURSI } from "./data/ayatKursi";
 
+const logoUrl = new URL("../assets/logo-white.png", import.meta.url).href;
+
 export const App: React.FC = () => {
   const [playbackTime, setPlaybackTime] = useState(0);
   const [isAudioMuted, setIsAudioMuted] = useState(true);
@@ -92,7 +94,7 @@ export const App: React.FC = () => {
       {/* Top Page Header */}
       <header className="max-w-6xl mx-auto w-full flex items-center justify-between pb-6 select-none">
         <div className="flex items-center space-x-3">
-          <img src="/assets/logo-white.png" alt="Floating Ayah" className="w-7 h-7 object-contain" />
+          <img src={logoUrl} alt="Floating Ayah" className="w-7 h-7 object-contain" />
           <span className="font-bold text-lg text-white tracking-tight">Floating Ayah</span>
         </div>
 
@@ -107,13 +109,13 @@ export const App: React.FC = () => {
           </button>
 
           <a
-            href="https://github.com/codeutsman"
+            href="https://github.com/utsmannn/floating-ayah/releases/latest"
             target="_blank"
             rel="noreferrer"
             className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-white text-black hover:bg-[#eae9df] font-semibold text-xs transition-colors rounded-md cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Download DMG</span>
+            <span>Download for Mac</span>
           </a>
         </div>
       </header>
@@ -159,7 +161,7 @@ export const App: React.FC = () => {
                 className="flex items-center space-x-1.5 text-[#dcdbd0] hover:text-teal-300 cursor-pointer transition-colors"
                 title="Floating Ayah in Menu Bar (Click to toggle sound)"
               >
-                <img src="/assets/logo-white.png" alt="Floating Ayah" className="w-3.5 h-3.5 object-contain" />
+                <img src={logoUrl} alt="Floating Ayah" className="w-3.5 h-3.5 object-contain" />
                 <span className="text-[10px] text-teal-400">2:255</span>
               </div>
 

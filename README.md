@@ -59,9 +59,6 @@ folder and run:
 shasum -a 256 -c Floating-Ayah-0.1.2-macos-arm64.sha256
 ```
 
-The repository is currently private; viewing releases and downloading assets
-requires an account with access.
-
 ## Usage
 
 | Control | Action |

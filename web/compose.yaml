@@ -1,0 +1,12 @@
+services:
+  site:
+    image: nginx:alpine
+    container_name: floating-ayah-site
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3457:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    security_opt:
+      - no-new-privileges:true

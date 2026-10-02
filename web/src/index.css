@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Amiri Quran";
+  src: url("/fonts/AmiriQuran-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-quran: "Amiri Quran", "Amiri", "Traditional Arabic", serif;
+  
+  --color-emerald-deep: #064e3b;
+  --color-gold-muted: #d4af37;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 
+  Floating Quran text vertical gradient fade mask
+  Exact replica of AppKit PanelView.swift LinearGradient:
+  - stops: 0 -> clear, 0.16 -> 0.65, 0.30 -> 1.0, 0.70 -> 1.0, 0.84 -> 0.65, 1.0 -> clear
+  Provides seamless, organic feathering on top & bottom lines without abrupt cuts!
+*/
+.mask-radial-fade {
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.15) 8%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.85) 28%,
+    rgba(0, 0, 0, 1) 36%,
+    rgba(0, 0, 0, 1) 64%,
+    rgba(0, 0, 0, 0.85) 72%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 0.15) 92%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.15) 8%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.85) 28%,
+    rgba(0, 0, 0, 1) 36%,
+    rgba(0, 0, 0, 1) 64%,
+    rgba(0, 0, 0, 0.85) 72%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 0.15) 92%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* Clean text shadows */
+.hero-title-shadow {
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.95), 0 1px 3px rgba(0, 0, 0, 1);
+}
+.hero-desc-shadow {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+}
+.hero-pills-shadow {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}

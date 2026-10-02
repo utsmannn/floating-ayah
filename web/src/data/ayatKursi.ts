@@ -1,0 +1,94 @@
+export interface QuranToken {
+  token: string;
+  is_spoken: boolean;
+  spoken_index: number | null;
+  start_ms: number | null;
+  end_ms: number | null;
+}
+
+export interface AyatKursiData {
+  surah: number;
+  surah_name_ar: string;
+  surah_name_en: string;
+  ayah: number;
+  ayah_name: string;
+  reciter: string;
+  reciter_ar: string;
+  audio_url: string;
+  fallback_audio_url: string;
+  duration_ms: number;
+  tokens: QuranToken[];
+}
+
+export const AYAT_KURSI: AyatKursiData = {
+  surah: 2,
+  surah_name_ar: "سورة البقرة",
+  surah_name_en: "Al-Baqarah",
+  ayah: 255,
+  ayah_name: "آية الكرسي (The Throne Verse)",
+  reciter: "Mishary Rashid Alafasy",
+  reciter_ar: "مشاري راشد العفاسي",
+  audio_url: "/audio/002255.mp3",
+  fallback_audio_url: "https://everyayah.com/data/Alafasy_128kbps/002255.mp3",
+  duration_ms: 51590,
+  tokens: [
+    { token: "ٱللَّهُ", is_spoken: true, spoken_index: 0, start_ms: 40, end_ms: 980 },
+    { token: "لَآ", is_spoken: true, spoken_index: 1, start_ms: 990, end_ms: 1040 },
+    { token: "إِلَٰهَ", is_spoken: true, spoken_index: 2, start_ms: 1050, end_ms: 3450 },
+    { token: "إِلَّا", is_spoken: true, spoken_index: 3, start_ms: 3460, end_ms: 4200 },
+    { token: "هُوَ", is_spoken: true, spoken_index: 4, start_ms: 4210, end_ms: 4580 },
+    { token: "ٱلْحَىُّ", is_spoken: true, spoken_index: 5, start_ms: 4590, end_ms: 5340 },
+    { token: "ٱلْقَيُّومُ", is_spoken: true, spoken_index: 6, start_ms: 5350, end_ms: 8100 },
+    { token: "ۚ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "لَا", is_spoken: true, spoken_index: 7, start_ms: 8110, end_ms: 8390 },
+    { token: "تَأْخُذُهُۥ", is_spoken: true, spoken_index: 8, start_ms: 8400, end_ms: 9530 },
+    { token: "سِنَةٌۭ", is_spoken: true, spoken_index: 9, start_ms: 9540, end_ms: 10810 },
+    { token: "وَلَا", is_spoken: true, spoken_index: 10, start_ms: 10820, end_ms: 11460 },
+    { token: "نَوْمٌۭ", is_spoken: true, spoken_index: 11, start_ms: 11470, end_ms: 13880 },
+    { token: "ۚ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "لَّهُۥ", is_spoken: true, spoken_index: 12, start_ms: 13890, end_ms: 14450 },
+    { token: "مَا", is_spoken: true, spoken_index: 13, start_ms: 14460, end_ms: 14740 },
+    { token: "فِى", is_spoken: true, spoken_index: 14, start_ms: 14750, end_ms: 14950 },
+    { token: "ٱلسَّمَٰوَٰتِ", is_spoken: true, spoken_index: 15, start_ms: 14960, end_ms: 16320 },
+    { token: "وَمَا", is_spoken: true, spoken_index: 16, start_ms: 16330, end_ms: 16820 },
+    { token: "فِى", is_spoken: true, spoken_index: 17, start_ms: 16830, end_ms: 17070 },
+    { token: "ٱلْأَرْضِ", is_spoken: true, spoken_index: 18, start_ms: 17080, end_ms: 18300 },
+    { token: "ۗ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "مَن", is_spoken: true, spoken_index: 19, start_ms: 18310, end_ms: 19220 },
+    { token: "ذَا", is_spoken: true, spoken_index: 20, start_ms: 19230, end_ms: 19440 },
+    { token: "ٱلَّذِى", is_spoken: true, spoken_index: 21, start_ms: 19450, end_ms: 20260 },
+    { token: "يَشْفَعُ", is_spoken: true, spoken_index: 22, start_ms: 20270, end_ms: 21030 },
+    { token: "عِندَهُۥٓ", is_spoken: true, spoken_index: 23, start_ms: 21040, end_ms: 23790 },
+    { token: "إِلَّا", is_spoken: true, spoken_index: 24, start_ms: 23800, end_ms: 24510 },
+    { token: "بِإِذْنِهِۦ", is_spoken: true, spoken_index: 25, start_ms: 24520, end_ms: 25910 },
+    { token: "ۚ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "يَعْلَمُ", is_spoken: true, spoken_index: 26, start_ms: 25920, end_ms: 26630 },
+    { token: "مَا", is_spoken: true, spoken_index: 27, start_ms: 26640, end_ms: 26980 },
+    { token: "بَيْنَ", is_spoken: true, spoken_index: 28, start_ms: 26990, end_ms: 27570 },
+    { token: "أَيْدِيهِمْ", is_spoken: true, spoken_index: 29, start_ms: 27580, end_ms: 28680 },
+    { token: "وَمَا", is_spoken: true, spoken_index: 30, start_ms: 28690, end_ms: 29180 },
+    { token: "خَلْفَهُمْ", is_spoken: true, spoken_index: 31, start_ms: 29190, end_ms: 30220 },
+    { token: "ۖ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "وَلَا", is_spoken: true, spoken_index: 32, start_ms: 30230, end_ms: 30790 },
+    { token: "يُحِيطُونَ", is_spoken: true, spoken_index: 33, start_ms: 30800, end_ms: 31950 },
+    { token: "بِشَىْءٍۢ", is_spoken: true, spoken_index: 34, start_ms: 31960, end_ms: 33190 },
+    { token: "مِّنْ", is_spoken: true, spoken_index: 35, start_ms: 33200, end_ms: 33720 },
+    { token: "عِلْمِهِۦٓ", is_spoken: true, spoken_index: 36, start_ms: 33730, end_ms: 36320 },
+    { token: "إِلَّا", is_spoken: true, spoken_index: 37, start_ms: 36330, end_ms: 37100 },
+    { token: "بِمَا", is_spoken: true, spoken_index: 38, start_ms: 37110, end_ms: 37690 },
+    { token: "شَآءَ", is_spoken: true, spoken_index: 39, start_ms: 37700, end_ms: 40070 },
+    { token: "ۚ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "وَسِعَ", is_spoken: true, spoken_index: 40, start_ms: 40080, end_ms: 40610 },
+    { token: "كُرْسِيُّهُ", is_spoken: true, spoken_index: 41, start_ms: 40620, end_ms: 41770 },
+    { token: "ٱلسَّمَٰوَٰتِ", is_spoken: true, spoken_index: 42, start_ms: 41780, end_ms: 43170 },
+    { token: "وَٱلْأَرْضَ", is_spoken: true, spoken_index: 43, start_ms: 43180, end_ms: 44580 },
+    { token: "ۖ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "وَلَا", is_spoken: true, spoken_index: 44, start_ms: 44590, end_ms: 45050 },
+    { token: "يَـُٔودُهُۥ", is_spoken: true, spoken_index: 45, start_ms: 45060, end_ms: 46220 },
+    { token: "حِفْظُهُمَا", is_spoken: true, spoken_index: 46, start_ms: 46230, end_ms: 47900 },
+    { token: "ۚ", is_spoken: false, spoken_index: null, start_ms: null, end_ms: null },
+    { token: "وَهُوَ", is_spoken: true, spoken_index: 47, start_ms: 47910, end_ms: 48450 },
+    { token: "ٱلْعَلِىُّ", is_spoken: true, spoken_index: 48, start_ms: 48460, end_ms: 49410 },
+    { token: "ٱلْعَظِيمُ", is_spoken: true, spoken_index: 49, start_ms: 49420, end_ms: 51590 },
+  ],
+};

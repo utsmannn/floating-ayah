@@ -1,0 +1,8 @@
+.build/
+dist/
+.DS_Store
+.pi/
+.ruff_cache/
+web/node_modules/
+web/dist/
+*.tmp

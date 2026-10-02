@@ -10,176 +10,266 @@
 
 ---
 
+## About
+
+Floating Ayah keeps Quran recitation and its Arabic text close while you work.
+A small, transparent panel floats above your desktop, following the reciter
+word by word and scrolling the current line into view. You can keep your editor,
+terminal, or other applications open without switching to a separate Quran window.
+
+The app lives in the macOS menu bar, with no Dock icon. It is built with SwiftUI,
+AppKit, and AVFoundation, and displays Uthmani Arabic text without translations.
+The banner above shows the website's terminal demonstration of the floating panel.
+
+By [Kiat Koding](https://kiatkoding.com).
+
+## Features
+
+- **Transparent floating lyrics:** a compact, right-to-left panel with softly faded edges, a brighter reading line, and a marker beneath the spoken word.
+- **Complete Quran text:** all 114 surahs and 6,236 ayahs are bundled, along with word timing data.
+- **Six reciters:** Mishary Rashid Alafasy, Mahmoud Khalil Al-Husary, Mohamed Siddiq Al-Minshawi, Abdul Basit Abdus Samad, Abdurrahman As-Sudais, and Abu Bakr Ash-Shatri.
+- **Offline recitation:** download the selected reciter's entire Quran; resume interrupted downloads without fetching completed files again.
+- **Flexible playback:** continuous playback, stop at the end of a surah, repeat the current ayah, or repeat an entire surah.
+- **Surah openings:** separate basmalah playback where applicable, with a one-second pause and a clean lyric transition at surah boundaries. At-Tawbah has no added basmalah.
+- **Adjustable appearance:** bundled Amiri Quran font, installed Arabic fonts, text size and color, line spacing, ayah number size, panel width, and shadows.
+- **Native desktop controls:** drag the panel anywhere, click its text to play or pause, and reveal controls on hover. Preferences and panel position persist.
+
+## Installation
+
+Requires **macOS 13 or newer**. The current packaged release is for
+**Apple Silicon (arm64)**.
+
+1. Download the DMG from [GitHub Releases](https://github.com/utsmannn/floating-ayah/releases/latest).
+2. Open it and drag **Floating Ayah.app** into **Applications**.
+3. Launch the app and look for its book icon in the menu bar.
+4. Choose a reciter, surah, and ayah, then press **Play**. The native app starts paused.
+
+A ZIP archive is also available. Users of the packaged app do not need Xcode,
+Swift, Python, or an additional runtime. Recitation audio is downloaded separately.
+
+**Signing:** the current release is ad-hoc signed, not Developer ID signed or
+notarized. macOS may block a downloaded copy. Only if you trust its source, try
+Control-click → Open, or System Settings → Privacy & Security → Open Anyway
+after the first launch attempt. Do not disable Gatekeeper globally.
+
+To verify the download, place the DMG, ZIP, and checksum manifest in the same
+folder and run:
+
+```sh
+shasum -a 256 -c Floating-Ayah-0.1.2-macos-arm64.sha256
+```
+
+The repository is currently private; viewing releases and downloading assets
+requires an account with access.
+
+## Usage
+
+| Control | Action |
+| --- | --- |
+| Menu-bar book icon | Choose a surah, ayah, reciter, playback mode, or appearance settings; manage downloads; quit. |
+| Click the Arabic text | Play or pause. |
+| Drag anywhere on the panel | Move the window without also triggering a click. |
+| Hover over the panel | Reveal playback controls without resizing the panel. |
+| Scroll wheel or trackpad | Manually scroll the text. |
+| Minus button | Hide the panel without stopping audio; reopen it from the menu bar. |
+| Play sample | Preview Al-Fatihah 1:2 for the selected reciter, pausing the main player. |
+
+Menus, errors, and accessibility descriptions are in English. Quran text and
+font previews remain Arabic.
+
+### Playback modes
+
+- **Continuous:** advance through ayahs and surahs, stopping at the end of the Quran.
+- **Stop at end of surah:** stop after the selected surah's final ayah.
+- **Repeat current ayah:** loop the numbered ayah; an opening basmalah plays once where applicable.
+- **Repeat surah:** continue through the selected surah, then return to its opening after a one-second pause.
+
+The panel's repeat-one button toggles ayah repeat versus continuous playback.
+Manual previous/next navigation can cross surah boundaries. Switching reciters
+restarts the selected ayah with that reciter's audio and timestamps. Sample
+playback never automatically resumes the main player.
+
+### Appearance
+
+The panel defaults to **420 pt wide**, adjustable from **280–800 pt**, with a
+viewport of roughly three lines. Arabic wraps without shrinking the font.
+Appearance settings include font size (**22–42 pt**), additional line spacing
+(**0–24 pt**), ayah number scale (**60–120%**), text color, and shadow controls.
+
+Amiri Quran is bundled and registered only for the app, not installed system-wide.
+Other Arabic font choices depend on fonts installed on your Mac. Ayah markers use
+Arabic-Indic numerals, such as ﴿٢٨٢﴾. Reduce Motion disables spatial scrolling
+animations and surah crossfades. The idle panel has no background; hovering reveals
+a translucent backing and controls.
+
+### Offline audio
+
+Choose **Download entire Quran** to save all 6,236 ayah recordings for the selected
+reciter. Progress shows the current surah, completed files, and saved bytes.
+Completed files survive cancellation and relaunch; **Resume Quran download**
+skips them. Downloads start only on an explicit action.
+
+Estimated full-library sizes vary by reciter: Alafasy **1.71 GB**, Husary **1.23 GB**,
+Minshawi **1.66 GB**, Abdul Basit **0.90 GB**, Sudais **1.81 GB**, and Shatri **1.41 GB**.
+These estimates come from upstream file-size snapshots and may change.
+
+Audio is stored in:
+
+```text
+~/Library/Application Support/FloatingAyah/Audio/<collection-id>/
+```
+
+Playback prefers downloaded files; undownloaded ayahs stream from EveryAyah.
+Each reciter has separate storage. Text, font, and timing data are already bundled.
+
 ## Build from Source
 
 ### Prerequisites
-- macOS 13.0+ (Ventura, Sonoma, Sequoia)
-- Xcode Command Line Tools (`xcode-select --install`)
-- Swift 5.9+ toolchain (included with Xcode / command line tools)
 
-### Quick Start
+- macOS 13.0 or newer.
+- Xcode Command Line Tools: `xcode-select --install`.
+- Swift 5.9 or newer. The native app has no external package dependencies.
+
+### Build and run
 
 ```sh
-# Clone repository
-git clone https://github.com/codeutsman/floating-ayah.git
+git clone https://github.com/utsmannn/floating-ayah.git
 cd floating-ayah
 
-# Build and run debug build
+# Debug app bundle
 sh scripts/build-app.sh
 open "dist/Floating Ayah.app"
+
+# Optimized app bundle
+sh scripts/build-app.sh release
 ```
 
-### Packaging Release DMG & Verification
+### Package a release
 
-To create an optimized release build packaged as a drag-and-drop `.dmg` disk image with SHA-256 checksums:
+Releases are built **locally and uploaded manually**, not through an automated
+CI build. Build on an Apple Silicon Mac to produce arm64 artifacts.
 
 ```sh
-# Build optimized release package (.app + .dmg + .zip + .sha256)
+# Build the release app, DMG, ZIP, and SHA-256 manifest
 sh scripts/package-app.sh
 
-# Verify binary integrity, signatures, and bundled Quran catalogs
+# Verify checksums, signatures, and resources in the packaged copies
 sh scripts/verify-package.sh
 ```
 
-Built artifacts are generated in the `dist/` directory:
-- `dist/Floating-Ayah-0.1.2-macos-arm64.dmg`
-- `dist/Floating-Ayah-0.1.2-macos-arm64.zip`
-- `dist/Floating-Ayah-0.1.2-macos-arm64.sha256`
+Output files are placed in `dist/`, with version and architecture in their names:
 
-### Running Tests
-
-```sh
-# Run full unit test suite (49 tests)
-swift test
-
-# Optional: live internet smoke test downloading sample audio
-FLOATING_AYAH_LIVE_TEST=1 swift test --filter OfflineIntegrationTests
+```text
+Floating-Ayah-0.1.2-macos-arm64.dmg
+Floating-Ayah-0.1.2-macos-arm64.zip
+Floating-Ayah-0.1.2-macos-arm64.sha256
 ```
 
-## Logo assets
+An Intel build requires a suitable x86_64 toolchain. The scripts do not convert an
+arm64 build into a universal binary.
 
-`assets/logo-original.png` preserves the user-supplied artwork. `assets/logo.png`
-is its transparent, centered platform-neutral export: no background tile or
-rounded frame is added. `assets/AppIcon.icns` contains all macOS icon sizes;
-`Resources/MenuBarIcon.png` is the small transparent status-bar symbol, rendered
-as a template so macOS chooses its monochrome foreground in light/dark mode.
+By default, the scripts use ad-hoc signing. If a Developer ID Application
+certificate and its private key are installed in your local Keychain:
 
-To regenerate exports from the original PNG:
+```sh
+SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' sh scripts/package-app.sh
+```
+
+Signing does **not** notarize the package. With an Apple Developer account and a
+configured Keychain notary profile, notarize and staple the DMG separately:
+
+```sh
+xcrun notarytool submit dist/Floating-Ayah-0.1.2-macos-arm64.dmg --keychain-profile PROFILE --wait
+xcrun stapler staple dist/Floating-Ayah-0.1.2-macos-arm64.dmg
+```
+
+Regenerate the DMG checksum after stapling. A separately distributed ZIP requires
+its own notarization workflow. Never commit signing credentials.
+
+### Tests
+
+```sh
+swift test
+
+# Optional network tests: download and decode sample recordings
+FLOATING_AYAH_LIVE_TEST=1 swift test --filter OfflineIntegrationTests
+FLOATING_AYAH_LIVE_TEST=1 swift test --filter ReciterTests
+FLOATING_AYAH_LIVE_TEST=1 swift test --filter BasmalahTests
+```
+
+Tests cover the Quran catalog, playback modes, basmalah handling, surah pauses,
+word timing, text wrapping, typography, preferences, icons, dragging, and offline
+storage. Sound quality, fullscreen behavior, and multi-monitor placement need
+on-device review.
+
+### Website
+
+The React/Vite landing page lives in `web/`. With [Bun](https://bun.sh) installed:
+
+```sh
+cd web
+bun install
+bunx vite --port 3456 --strictPort
+
+# Production output: web/dist/
+bunx vite build
+```
+
+The website contains a code-built terminal demonstration and a transparent
+Ayat al-Kursi overlay. Its silent preview uses a demo clock; the native app's
+scrolling follows actual AVQueuePlayer playback.
+
+### Logo assets
+
+`assets/logo-original.png` preserves the original artwork. `assets/logo.png`
+is a centered transparent export without an enclosing icon shape.
+`assets/AppIcon.icns` contains macOS icon sizes; the bundled `MenuBarIcon.png`
+is rendered as a monochrome template.
 
 ```sh
 swift scripts/build-icons.swift
 iconutil -c icns assets/AppIcon.iconset -o assets/AppIcon.icns
 ```
 
-## Release packages and signing
+### Project structure
 
-```sh
-# Optimized app + drag-to-Applications DMG + ZIP + SHA-256 checksums
-sh scripts/package-app.sh
-# Mount DMG, verify both signatures/checksums and relocated resources
-sh scripts/verify-package.sh
-```
+- `Sources/FloatingAyah/`: native app, menu-bar UI, floating panel, playback, and offline downloads.
+- `Sources/FloatingAyah/Resources/`: Quran text, per-reciter timings and size catalogs, font, icons, and source notices.
+- `Tests/FloatingAyahTests/`: native unit and opt-in network tests.
+- `scripts/`: app assembly, icon generation, packaging, and verification.
+- `web/`: React landing page and interactive demonstration.
+- `assets/`: logo exports and README banner.
 
-Output names include version and architecture, e.g.
-`dist/Floating-Ayah-0.1.0-macos-arm64.dmg`, `.zip`, and `.sha256`.
-The DMG contains `Floating Ayah.app`, an Applications shortcut, and installation
-notes. macOS 13+ is required. An arm64 build supports Apple Silicon Macs; an Intel
-build must be built on a suitable x86_64 toolchain (the script does not claim a
-universal binary). Users of the packaged app do not need Swift/Xcode, Python,
-or external runtime packages. Audio libraries are downloaded separately.
+## Credits and Limitations
 
-The build script verifies the bundle signature. With no signing identity it uses
-**ad-hoc signing**, which is not trusted Developer ID signing. A copy downloaded
-on another Mac may be blocked by Gatekeeper. Only for a build you trust, try
-Control-click → Open, or System Settings → Privacy & Security → Open Anyway
-after attempting to launch. Do not disable Gatekeeper globally.
+- **Quran text:** [Al Quran Cloud](https://alquran.cloud), `quran-uthmani` edition, preserved as supplied.
+- **Recitation:** [EveryAyah](https://everyayah.com/recitations_ayat.html) and the credited reciters.
+- **Word timings:** Colin Fair's [quran-align](https://github.com/cpfair/quran-align), licensed under CC BY 4.0.
+- **Typeface:** [Amiri Quran](https://github.com/aliftype/amiri), licensed under SIL OFL 1.1.
 
-If a Developer ID Application identity with its private key is installed in the
-local Keychain, sign with hardened runtime/timestamp instead:
+For surahs 2–114 except At-Tawbah, the prepended basmalah is displayed as a
+separate, unnumbered opening. It uses the selected reciter's Al-Fatihah 1:1
+recording and timings. Al-Fatihah retains its numbered basmalah. A one-second
+silence item separates surahs, with no extra pause between ordinary ayahs or
+between an opening basmalah and ayah 1.
 
-```sh
-SIGNING_IDENTITY='Developer ID Application: Your Name (TEAMID)' sh scripts/package-app.sh
-```
+Word alignment is automatically generated and may be inaccurate. Missing or
+incompatible indices fall back to manual scrolling rather than guessing a word;
+known Alafasy examples include 10:1, 13:1, and 50:34. Recording silence and network
+buffering can introduce additional gaps. Installed fonts may not render every
+Uthmani annotation correctly.
 
-This signs the app and DMG but **does not notarize them**. Public distribution
-still needs an Apple Developer account and notarization, for example using an
-already configured Keychain notary profile (do not put credentials in the repo):
-
-```sh
-xcrun notarytool submit dist/Floating-Ayah-0.1.0-macos-arm64.dmg --keychain-profile PROFILE --wait
-xcrun stapler staple dist/Floating-Ayah-0.1.0-macos-arm64.dmg
-```
-
-After stapling, regenerate the DMG checksum; the ZIP also needs its own
-notarization workflow if it is distributed independently.
-
-## Controls
-
-Menus, status messages, errors, and accessibility descriptions are in English.
-Quran text and font preview samples remain Arabic. Download sizes use English
-number formatting, independent of the Mac's current language.
-
-- **Menu-bar book icon:** choose any of the 114 surahs, select an ayah, play/pause, choose an installed Arabic font, change font size (22–42 pt), download all 114 surahs for offline playback, or quit.
-- **Reciter:** choose Mishary Rashid Alafasy (128 kbps), Mahmoud Khalil Al-Husary (64 kbps), Mohamed Siddiq Al-Minshawi (128 kbps), Abdul Basit Abdus Samad (64 kbps), Abdurrahman As-Sudais (192 kbps), or Abu Bakr Ash-Shatri (128 kbps). Choice persists; switching restarts the current ayah at zero with that qari's audio and timestamps.
-- **Play sample:** preview Al-Fatihah 1:2 for the selected reciter. Pauses the main player without changing its ayah. The sample stops at the verse end, on Stop sample, when switching reciters, or starting the main player. Main audio never automatically resumes after preview. Uses a local file when available, otherwise streams only on click. Reciter selection is disabled while a download runs.
-- **Click the Arabic ayah:** play/pause.
-- **Hover over the panel:** reveal previous, play/pause, next, and repeat-one controls. Their space stays reserved so hover doesn't change panel height.
-- **Drag anywhere in the floating window:** move it, including over Arabic text, padding, or controls. A window-wide pan recognizer delays click delivery so a drag does not also toggle play/pause or press a button. A plain click still operates its original control; wheel/trackpad scrolling is unchanged.
-- **Minus button:** hide the panel without stopping audio. Reopen from the menu bar.
-- **Playback mode:** **Continuous** (default) automatically advances ayah by ayah and surah by surah, stopping at 114:6. **Stop at end of surah** stops at the selected surah's final ayah. **Repeat current ayah** loops only the current ayah. **Repeat surah** continues through the selected surah, then loops to its beginning (including basmalah where applicable). Mode selection persists. The repeat-one panel button toggles repeat vs continuous mode; manual previous/next can cross surah boundaries.
-
-The panel defaults to **420 pt wide**, configurable from **280–800 pt** under **Ayah appearance**. Its width remains constant at the selected setting; Arabic reflows right-to-left without shrinking the font. The viewport shows up to roughly **three lines**, like mini lyrics, rather than expanding to screen height. Long ayahs automatically scroll to the line being recited, keeping it near the center; the complete ayah remains manually scrollable. The previous and next ayah within the same surah share a continuous scroll document and appear dimmer. Neighboring text never crosses a surah boundary: the outgoing surah fades away with a 300-ms crossfade, leaving a clean opening. Reduce Motion disables this transition. Wrapped lines and ayah boundaries use the same baseline spacing with no blank paragraph between ayahs. **Line spacing** adjusts additional spacing from 0–24 pt (default 6). **Ayah number size** adjusts the marker to 60–120% of the main text size (default 100%). Existing appearance preferences migrate without resetting font, colors, or width. Each ayah ends with a Quran-font ornament and Arabic-Indic number (e.g. ﴿٢٨٢﴾). Numbers are display-only: source Quran strings and timing word indices are preserved. The active spoken line is brighter. Within it, the timed word (occasionally a multiword span in the upstream alignment) has a translucent marker and underline, updated about every 80 ms. This is word-level timing, not letter-level recognition. Markers hold on the last word during pauses and clear when the ayah/timing changes. A vertical opacity gradient fades the top/bottom edges instead of abruptly cutting text. Natural ayah advancement preserves the outgoing text's screen position before smoothly centering the new ayah. Auto-scroll uses a retargetable 60-Hz, 450-ms smoothstep transition; Reduce Motion skips spatial animation. The background is fully transparent while idle. Text defaults to white, with configurable color and shadow (on/off, color, depth, blur, and opacity). Transparent desktop backgrounds vary, so chosen colors cannot guarantee contrast on every app behind the panel. Hover reveals a thin translucent dark backing, header, and controls. The panel stays above ordinary app windows and joins desktop Spaces.
-
-Selected ayah, font family, font size, text/shadow appearance, width, and panel position persist across launches. **Amiri Quran · Uthmani** is bundled under SIL OFL 1.1 and available without installing any font. The font dropdown includes a basmalah preview rendered in each font. Other font choices are installed macOS families covering Arabic letters and basic harakat; this does not guarantee every Uthmani annotation is drawn perfectly. Missing saved fonts fall back to Geeza Pro. Measurement and rendering use the same selected font so line-follow scrolling updates with it. Playback does not automatically resume on launch.
-
-## Audio and text
-
-- **Surah transitions:** Automatic continuous playback inserts one second of bundled silence between the last ayah and the next surah's opening. Repeat surah uses the same pause before restarting. The silence is an ordinary player item, so pause/resume remains consistent and no delayed timer can restart audio after a user action. No extra silence is added between ayahs or between basmalah and ayah 1. At-Tawbah always goes directly from the pause to 9:1 without basmalah.
-- **Basmalah at surah openings:** For surahs 2–114 except 9 (At-Tawbah), the source's prepended basmalah is presented as its own unnumbered opening and played before ayah 1. It uses the selected reciter's Al-Fatihah 1:1 MP3 and matching word timestamps, which are already included in offline downloads. Al-Fatihah keeps basmalah as its numbered ayah 1; At-Tawbah has no added basmalah. Repeat-one plays an opening once, then repeats the numbered ayah; starting at a later ayah adds no opening. Source strings and the 6,236-ayah corpus remain unchanged.
-- **Text:** Al Quran Cloud's `quran-uthmani` edition, fetched from <https://api.alquran.cloud/v1/quran/quran-uthmani>. All **114 surahs / 6,236 ayahs** are bundled in `Sources/FloatingAyah/Resources/quran.json`. Arabic strings are preserved as supplied, including basmalah included by this edition at the start of surahs.
-- **Audio:** Six murattal collections from [EveryAyah](https://everyayah.com/recitations_ayat.html), listed above. URLs use the collection ID and local surah/ayah numbers (`001001.mp3`, `002282.mp3`, etc.). No full audio corpus is bundled.
-- **Synchronization:** the floating text follows the AVQueuePlayer's actual current audio item, not a guessed timer. Intra-ayah scrolling uses Colin Fair's [quran-align](https://github.com/cpfair/quran-align) collection-specific word timestamps (CC BY 4.0), mapped to the real rendered TextKit line. Timing data is bundled offline. Waqaf marks are not counted as spoken words; the basmalah prefix is split for display only, and each playback step uses its own recording's timing. Automatically generated timings can have inaccuracies. Any verse with missing/incompatible timing indices safely uses manual scroll instead of guessing (e.g. Alafasy 10:1, 13:1, 50:34). The next ayah is queued ahead. There can still be silence in recordings or buffering between files; seamless/gapless playback is not guaranteed.
-- **Offline audio:** click **Download entire Quran** in the menu bar to download all **114 surahs / 6,236 ayahs** for the **selected reciter only**. The catalog is processed sequentially per ayah file, with global progress, the currently downloading surah, and actual saved bytes. The UI shows a collection-specific full-size estimate based on EveryAyah's 6,236 per-file sizes (not an estimate from ayah count): Alafasy ~1.71 GB, Husary ~1.23 GB, Minshawi ~1.66 GB, Abdul Basit ~0.90 GB, Sudais ~1.81 GB, Shatri ~1.41 GB. Upstream sizes can change. This may take significant time/disk space; it starts only on an explicit click. Complete files survive cancellation/relaunch, and **Resume Quran download** skips them. Failed or truncated responses are not marked downloaded. Playback prefers the local file whenever it exists; undownloaded ayahs still stream and require internet. Resume/retry after downloading switches the current ayah to its local copy without restarting the app. Text and timing data are already offline.
-- **Storage:** `~/Library/Application Support/FloatingAyah/Audio/<collection-id>/`. Each qari's files/counts/size are isolated; existing Alafasy downloads stay in their original folder. Downloaded surahs are not evicted as temporary caches. Closing the menu does not stop downloads; quitting the app stops the current download, while completed ayahs remain. Quitting/reopening never starts a full-Quran download without another explicit click.
-
-Source credits and upstream links are also bundled in `Resources/SOURCES.md`. Basmalah is intentionally sourced from each qari's separate 1:1 recording, not inferred from a surah's ayah-1 MP3; listening review across recordings remains advisable.
-
-Source attribution is not a license grant. Verify source terms and audio/text redistribution rights before public release. This prototype is not a religiously reviewed Quran edition; Arabic glyph rendering and recitation/text correspondence should receive human review before distribution.
-
-## Verification
-
-```sh
-swift test
-# Optional: downloads seven Al-Fatihah files to a temporary folder and decodes
-# them locally with AVFoundation; files are removed after the test.
-FLOATING_AYAH_LIVE_TEST=1 swift test --filter OfflineIntegrationTests
-# Optional six-reciter preview download/AVFoundation decode test:
-FLOATING_AYAH_LIVE_TEST=1 swift test --filter ReciterTests
-```
-
-Tests cover catalog completeness/order, audio filename mapping, within-surah navigation boundaries, compact fixed-width wrapping, timed word mapping including pauses/repeated phrases/waqaf/basmalah, native scroll reset/follow, timing corpus compatibility, font registration/persistence/measurement, configurable width and appearance persistence, neighboring-ayah range offsets and dimming, offline file validation/persistence/resume across surahs, full-Quran navigation modes, exact word-marker movement/removal, whole-window drag setup, configurable spacing/number size and backward-compatible appearance migration, and saved-state validation. Actual sound quality, all qari recordings, fullscreen behavior, and multi-monitor placement require on-device checks.
+This project is not a religiously reviewed Quran edition. Human review of Arabic
+rendering and recitation correspondence is recommended. Source attribution is not
+a blanket redistribution grant; verify upstream terms before public distribution.
+Full provenance and resource notices are in
+[Resources/SOURCES.md](Sources/FloatingAyah/Resources/SOURCES.md).
 
 ## License
 
-The original application and website source code is licensed under the
+Original application and website source code is licensed under the
 [MIT License](LICENSE). Copyright © 2026 Utsman (utsmannn).
 
-Third-party resources retain their own licenses and terms: Amiri Quran is
-licensed under SIL OFL 1.1, and quran-align timing data is licensed under
-CC BY 4.0. Quran text and recitation recordings are not relicensed under MIT;
-see [resource credits](Sources/FloatingAyah/Resources/SOURCES.md) and the bundled
-license files for attribution and upstream terms.
-
-## Structure
-
-- `Reciter.swift` / `ReciterView.swift` / `ReciterSample.swift`: reciter selection and explicit preview playback.
-- `Quran.swift`: bundled catalog and audio mapping.
-- `PlayerStore.swift`: queue playback, ayah synchronization, repeat, state persistence.
-- `ArabicText.swift`: shared Arabic TextKit measurement/display, text click and header drag.
-- `PanelView.swift` / `PanelController.swift`: fixed-width transparent lyric window and controls.
-- `WordTimings.swift` / `LyricsText.swift`: timestamp-to-text mapping and native line-follow scrolling.
-- `ArabicFonts.swift` / `FontPicker.swift`: bundled Quran font registration, installed fonts, and dropdown previews.
-- `LyricAppearance.swift` / `AppearanceSettingsView.swift`: persistent color/shadow/width settings and neighboring-ayah document ranges.
-- `OfflineAudio.swift` / `OfflineAudioView.swift`: durable downloads, progress/cancellation, and offline status.
-- `MenuView.swift` / `FloatingAyahApp.swift`: menu-bar interface and application entry.
-- `scripts/build-app.sh`: assemble and ad-hoc sign the `.app` bundle.
+Third-party resources retain their own licenses and terms. The MIT license does
+not relicense Quran text, recitation recordings, Amiri Quran, or quran-align data.
+See the resource credits and bundled license notices above.

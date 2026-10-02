@@ -1,10 +1,14 @@
-# Floating Ayah
+<h1 align="center">Floating Ayah</h1>
 
-![Floating Ayah's transparent Ayat al-Kursi overlay over the Claude Code terminal demo](assets/readme-banner.png)
+<p align="center">
+  <img src="assets/readme-banner.png" alt="Floating Ayah's transparent Quran overlay over a coding terminal" width="100%" />
+</p>
 
-*Web demo: a code-built Claude Code terminal with Floating Ayah's transparent, word-synchronized Quran overlay.*
+<p align="center">
+  Native macOS menu-bar Quran player. Arabic ayahs only — no translation.
+</p>
 
-Native macOS menu-bar Quran player. Arabic ayahs only — no translation.
+---
 
 ## Build from Source
 

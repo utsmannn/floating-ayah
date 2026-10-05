@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Download, Volume2, VolumeX, Battery, Wifi } from "lucide-react";
+import { Download, Volume2, VolumeX, Battery, Wifi, Terminal, Copy, Check } from "lucide-react";
 import { ClaudeCodeTerminal } from "./components/ClaudeCodeTerminal";
 import { FloatingAyahOverlay } from "./components/FloatingAyahOverlay";
 import { DesktopPreview } from "./components/DesktopPreview";
@@ -87,13 +87,26 @@ export const App: React.FC = () => {
     setIsAudioMuted((prev) => !prev);
   };
 
+  const [copied, setCopied] = useState(false);
+  const installCommand = "curl -fsSL https://floating-ayah.kiatkoding.com/install.sh | bash";
+
+  const handleCopyInstall = async () => {
+    try {
+      await navigator.clipboard.writeText(installCommand);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
+  };
+
   return (
-    <div className="min-h-screen w-full bg-[#0a0a07] text-[#d6d6cd] flex flex-col justify-between py-6 sm:py-8 px-4 sm:px-8 font-sans selection:bg-teal-500/30 selection:text-teal-200">
+    <div className="min-h-screen w-full bg-[#0a0a07] text-[#d6d6cd] flex flex-col justify-between py-4 sm:py-6 px-4 sm:px-8 font-sans selection:bg-teal-500/30 selection:text-teal-200">
       {/* Hidden Native Audio Element */}
       <audio ref={audioRef} src={AYAT_KURSI.audio_url} preload="auto" playsInline />
 
       {/* Top Page Header */}
-      <header className="max-w-6xl mx-auto w-full flex flex-wrap items-center justify-between gap-4 pb-6 select-none">
+      <header className="max-w-6xl mx-auto w-full flex flex-wrap items-center justify-between gap-4 pb-4 select-none">
         <div className="flex items-center space-x-3">
           <img src={logoUrl} alt="Floating Ayah" className="w-7 h-7 object-contain" />
           <span className="font-bold text-lg text-white tracking-tight">Floating Ayah</span>
@@ -122,16 +135,16 @@ export const App: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-6xl mx-auto w-full flex-1 flex flex-col justify-center my-auto py-2">
+      <main className="max-w-6xl mx-auto w-full flex-1 flex flex-col justify-center my-auto py-1">
         {/* Clean Hero Section (Stripped of AI-slop pill badges) */}
-        <section className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white leading-snug">
+        <section className="text-center max-w-2xl mx-auto mb-4 sm:mb-5 px-4">
+          <h1 className="text-2xl sm:text-3xl md:text-[34px] font-semibold tracking-tight text-white leading-snug">
             Keep Quran in your <span className="text-teal-300">peripheral vision</span>
             <br />
             while deep in your coding flow.
           </h1>
 
-          <p className="mt-2.5 text-xs sm:text-[13px] text-[#8e8d80] leading-relaxed max-w-lg mx-auto">
+          <p className="mt-2 text-xs sm:text-[13px] text-[#8e8d80] leading-relaxed max-w-lg mx-auto">
             Native macOS menu-bar lyric player synchronized with murattal recitation.
             <br className="hidden sm:inline" />
             Pure Uthmani Arabic text, zero translation noise, and 100% offline.
@@ -190,6 +203,36 @@ export const App: React.FC = () => {
             />
           </div>
         </DesktopPreview>
+
+        {/* CLI One-line Installer with Copy CTA */}
+        <div className="mt-4 sm:mt-5 flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-2 px-3.5 py-2 bg-[#12120e] hover:bg-[#161611] border border-[#24241a] rounded-lg transition-colors max-w-full font-mono text-xs text-[#d6d6cd] group">
+            <Terminal className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+            <code className="truncate max-w-[280px] sm:max-w-md md:max-w-lg select-all text-[#c8c7bb]">
+              {installCommand}
+            </code>
+            <button
+              onClick={handleCopyInstall}
+              className="flex items-center gap-1.5 ml-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 active:bg-white/15 text-white rounded border border-white/10 transition-colors cursor-pointer text-[11px] font-sans font-medium shrink-0"
+              title="Copy install command"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3 h-3 text-[#7bd88f]" />
+                  <span className="text-[#7bd88f]">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3 text-[#a09f8e]" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+          </div>
+          <p className="text-[11px] text-[#6d6c5c] tracking-tight">
+            macOS 13+ · Apple Silicon · No sudo required · Auto-verifies checksum
+          </p>
+        </div>
       </main>
 
       {/* Minimal Footer */}

@@ -45,7 +45,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
       </div>
 
       {/* Main Terminal Body: High Contrast Deep Dark Background */}
-      <div className="p-10 space-y-5 w-full overflow-y-auto no-scrollbar pb-32">
+      <div className="p-8 space-y-4 w-full overflow-y-auto no-scrollbar pb-24">
         {/* User Prompt Turn (in English) */}
         <div className="border-l-2 border-teal-400 pl-3.5 py-1 space-y-1 w-full">
           <div className="text-[11px] font-semibold tracking-wider text-teal-400">

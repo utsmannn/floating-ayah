@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 const WIDTH = 1152;
-const HEIGHT = 560;
+const HEIGHT = 500;
 
 /** Keep the entire desktop scene intact, including its transparent overlay. */
 export function DesktopPreview({ children }: { children: ReactNode }) {

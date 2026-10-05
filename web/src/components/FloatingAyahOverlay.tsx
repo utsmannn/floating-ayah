@@ -143,7 +143,7 @@ export const FloatingAyahOverlay: React.FC<FloatingAyahOverlayProps> = ({
         <div
           ref={containerRef}
           onClick={onTogglePlay}
-          className="relative h-[230px] overflow-y-auto no-scrollbar mask-radial-fade cursor-pointer py-14 px-2 text-right transition-colors"
+          className="relative h-[210px] overflow-y-auto no-scrollbar mask-radial-fade cursor-pointer py-10 px-2 text-right transition-colors"
           dir="rtl"
           title="Click to Play / Pause recitation"
         >

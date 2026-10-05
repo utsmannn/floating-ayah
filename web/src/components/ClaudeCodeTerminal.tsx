@@ -21,7 +21,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
   }, []);
 
   return (
-    <div className="absolute inset-0 overflow-hidden font-mono text-[13px] sm:text-[14px] leading-[1.65] text-[#b5b4a5] select-none pointer-events-none bg-[#0f0f0c]">
+    <div className="absolute inset-0 overflow-hidden font-mono text-[14px] leading-[1.65] text-[#b5b4a5] select-none pointer-events-none bg-[#0f0f0c]">
       {/* Top macOS Terminal title bar */}
       <div className="h-9 px-5 bg-[#0b0b08] border-b border-[#202016] flex items-center justify-between text-[12px] text-[#706f60]">
         <div className="flex items-center space-x-3">
@@ -35,7 +35,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
             claude
           </span>
           <span className="text-[#454436]">—</span>
-          <span className="text-[#888776] hidden sm:inline font-medium">~/Development/floating-ayah (main*)</span>
+          <span className="text-[#888776] font-medium">~/Development/floating-ayah (main*)</span>
         </div>
         <div className="flex items-center space-x-3 text-[12px]">
           <span className="text-teal-400 font-semibold">Claude 3.7 Sonnet</span>
@@ -45,19 +45,19 @@ export const ClaudeCodeTerminal: React.FC = () => {
       </div>
 
       {/* Main Terminal Body: High Contrast Deep Dark Background */}
-      <div className="p-6 sm:p-10 space-y-5 w-full overflow-y-auto no-scrollbar pb-32">
+      <div className="p-10 space-y-5 w-full overflow-y-auto no-scrollbar pb-32">
         {/* User Prompt Turn (in English) */}
         <div className="border-l-2 border-teal-400 pl-3.5 py-1 space-y-1 w-full">
           <div className="text-[11px] font-semibold tracking-wider text-teal-400">
             User
           </div>
-          <p className="text-[#edece2] text-sm sm:text-[15px] font-medium leading-relaxed">
+          <p className="text-[#edece2] text-[15px] font-medium leading-relaxed">
             "Add repeat surah option and insert a 1-second silence pause between surahs. Make sure Surah At-Tawbah starts directly without basmalah."
           </p>
         </div>
 
         {/* Claude Code Tool Execution Box */}
-        <div className="border border-[#202016] p-4 sm:p-5 space-y-4 w-full">
+        <div className="border border-[#202016] p-5 space-y-4 w-full">
           <div className="flex items-center justify-between text-xs text-[#a09f8e] border-b border-[#1c1c13] pb-2.5">
             <div className="flex items-center space-x-2">
               <span className="text-[#deddd2] font-bold text-sm">Claude Code</span>
@@ -74,7 +74,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
           </div>
 
           {/* Action Log Entries (Wide width) */}
-          <div className="space-y-2 text-xs sm:text-[13px]">
+          <div className="space-y-2 text-[13px]">
             <div className={`flex items-start gap-2.5 transition-opacity duration-300 ${step >= 0 ? "opacity-100" : "opacity-30"}`}>
               <span className="text-[#7bd88f] font-bold">✓</span>
               <div className="flex-1">
@@ -107,7 +107,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
           </div>
 
           {/* Claude Code Edit Tool Diff Block */}
-          <div className="bg-[#0a0a07] border border-[#1a1a12] p-3 text-[12px] sm:text-[13px] font-mono overflow-x-auto text-[#deddd2] w-full">
+          <div className="bg-[#0a0a07] border border-[#1a1a12] p-3 text-[13px] font-mono overflow-x-auto text-[#deddd2] w-full">
             <div className="text-[#555446] pb-1">// Edit Sources/FloatingAyah/PlayerStore.swift</div>
             <div className="text-[#706f60]">@@ -74,6 +74,9 @@ func queueNext() &#123;</div>
             <div className="text-[#888776]">     if entry.isLastAyahOfSurah &#123;</div>
@@ -125,7 +125,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
         </div>
 
         {/* Bash execution */}
-        <div className={`space-y-1.5 text-xs sm:text-[13px] text-[#deddd2] transition-opacity duration-300 ${step >= 3 ? "opacity-100" : "opacity-30"}`}>
+        <div className={`space-y-1.5 text-[13px] text-[#deddd2] transition-opacity duration-300 ${step >= 3 ? "opacity-100" : "opacity-30"}`}>
           <div className="flex items-center space-x-2 text-[#deddd2]">
             <span className="text-teal-400 font-bold">$</span>
             <span className="font-semibold text-white">swift test -c release</span>
@@ -161,7 +161,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
         </div>
 
         {/* AppKit Packaging Command */}
-        <div className={`text-xs sm:text-[13px] space-y-1 transition-opacity duration-300 ${step >= 4 ? "opacity-100" : "opacity-30"}`}>
+        <div className={`text-[13px] space-y-1 transition-opacity duration-300 ${step >= 4 ? "opacity-100" : "opacity-30"}`}>
           <div className="flex items-center space-x-2 text-[#deddd2]">
             <span className="text-teal-400 font-bold">$</span>
             <span>sh scripts/package-app.sh && sh scripts/verify-package.sh</span>
@@ -172,7 +172,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
         </div>
 
         {/* Claude Code final answer message */}
-        <div className="border-l-2 border-[#7bd88f] pl-3.5 py-1 text-xs sm:text-[13px] text-[#deddd2] space-y-1 w-full">
+        <div className="border-l-2 border-[#7bd88f] pl-3.5 py-1 text-[13px] text-[#deddd2] space-y-1 w-full">
           <div className="font-semibold text-white">Floating Ayah v0.1.2 verified:</div>
           <div className="text-[#888776] space-y-0.5 text-xs">
             <div>• Inserted a 1-second silence pause automatically before surah openings.</div>
@@ -182,7 +182,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
         </div>
 
         {/* Claude Code Prompt Input Line */}
-        <div className="flex items-center space-x-2 pt-1 text-[#deddd2] text-xs sm:text-[13px]">
+        <div className="flex items-center space-x-2 pt-1 text-[#deddd2] text-[13px]">
           <span className="text-teal-400 font-bold">&gt;</span>
           <span className="text-[#888776]">
             {step === 0 && "reading project structure..."}
@@ -204,7 +204,7 @@ export const ClaudeCodeTerminal: React.FC = () => {
         <div className="flex items-center space-x-4">
           <span className="text-teal-400">Claude Code v1.0</span>
           <span>|</span>
-          <span className="text-[#706f60] hidden sm:inline">38.2k / 200k tokens</span>
+          <span className="text-[#706f60]">38.2k / 200k tokens</span>
         </div>
         <div className="flex items-center space-x-3 text-[11px] font-mono">
           <span>arm64</span>

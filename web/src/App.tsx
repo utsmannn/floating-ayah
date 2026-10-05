@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Download, Volume2, VolumeX, Battery, Wifi } from "lucide-react";
 import { ClaudeCodeTerminal } from "./components/ClaudeCodeTerminal";
 import { FloatingAyahOverlay } from "./components/FloatingAyahOverlay";
+import { DesktopPreview } from "./components/DesktopPreview";
 import { AYAT_KURSI } from "./data/ayatKursi";
 
 const logoUrl = new URL("../assets/logo-white.png", import.meta.url).href;
@@ -92,7 +93,7 @@ export const App: React.FC = () => {
       <audio ref={audioRef} src={AYAT_KURSI.audio_url} preload="auto" playsInline />
 
       {/* Top Page Header */}
-      <header className="max-w-6xl mx-auto w-full flex items-center justify-between pb-6 select-none">
+      <header className="max-w-6xl mx-auto w-full flex flex-wrap items-center justify-between gap-4 pb-6 select-none">
         <div className="flex items-center space-x-3">
           <img src={logoUrl} alt="Floating Ayah" className="w-7 h-7 object-contain" />
           <span className="font-bold text-lg text-white tracking-tight">Floating Ayah</span>
@@ -138,16 +139,16 @@ export const App: React.FC = () => {
         </section>
 
         {/* Realistic macOS Desktop Window with Claude Code & Floating Quran Overlay */}
-        <div className="relative w-full rounded-xl overflow-hidden border border-[#202016] bg-[#0f0f0c] shadow-2xl shadow-black/95 flex flex-col h-[520px] sm:h-[560px]">
+        <DesktopPreview>
           {/* macOS Desktop Menu Bar Simulation */}
           <div className="h-7 px-4 bg-[#0a0a07] border-b border-[#1c1c13] flex items-center justify-between text-[11px] text-[#706f60] select-none z-30 font-mono">
             {/* Apple Logo & App Title */}
             <div className="flex items-center space-x-4">
               <span className="text-[#dcdbd0]"></span>
               <span className="text-[#dcdbd0]">Terminal</span>
-              <span className="hidden sm:inline text-[#555446]">Shell</span>
-              <span className="hidden sm:inline text-[#555446]">Edit</span>
-              <span className="hidden sm:inline text-[#555446]">View</span>
+              <span className="text-[#555446]">Shell</span>
+              <span className="text-[#555446]">Edit</span>
+              <span className="text-[#555446]">View</span>
             </div>
 
             {/* Menu Bar Tray (With Floating Ayah Status Bar Icon!) */}
@@ -188,13 +189,13 @@ export const App: React.FC = () => {
               onToggleMute={toggleMute}
             />
           </div>
-        </div>
+        </DesktopPreview>
       </main>
 
       {/* Minimal Footer */}
       <footer className="max-w-6xl mx-auto w-full pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-[#555446] select-none gap-2">
         <p>© 2026 Floating Ayah · Free & Open Source under MIT</p>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
           <a
             href="https://kiatkoding.com"
             target="_blank"

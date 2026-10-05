@@ -56,8 +56,10 @@ export const FloatingAyahOverlay: React.FC<FloatingAyahOverlayProps> = ({
       const containerRect = container.getBoundingClientRect();
       const wordRect = word.getBoundingClientRect();
 
-      const offsetTop = wordRect.top - containerRect.top + container.scrollTop;
-      const targetScroll = offsetTop - container.clientHeight / 2 + wordRect.height / 2;
+      // Rectangles include the desktop preview's transform; scroll offsets do not.
+      const scale = containerRect.height / container.offsetHeight || 1;
+      const offsetTop = (wordRect.top - containerRect.top) / scale + container.scrollTop;
+      const targetScroll = offsetTop - container.clientHeight / 2 + wordRect.height / (2 * scale);
 
       container.scrollTo({
         top: Math.max(0, targetScroll),
@@ -74,7 +76,7 @@ export const FloatingAyahOverlay: React.FC<FloatingAyahOverlayProps> = ({
 
   return (
     <div
-      className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 z-40 w-[420px] max-w-[94vw] select-none transition-all duration-300 pointer-events-auto"
+      className="absolute bottom-8 right-8 z-40 w-[420px] select-none transition-all duration-300 pointer-events-auto"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -155,7 +157,7 @@ export const FloatingAyahOverlay: React.FC<FloatingAyahOverlayProps> = ({
 
           {/* Current Ayah: Ayat al-Kursi (2:255) - Crisp, Bright, Beautiful */}
           <div
-            className="font-quran text-[28px] sm:text-[31px] leading-[2.2] tracking-wide text-white text-justify"
+            className="font-quran text-[31px] leading-[2.2] tracking-wide text-white text-justify"
             style={{
               textShadow: "0 2px 8px rgba(0,0,0,0.95), 0 1px 2px rgba(0,0,0,1)",
             }}

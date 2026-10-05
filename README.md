@@ -59,6 +59,34 @@ folder and run:
 shasum -a 256 -c Floating-Ayah-0.1.2-macos-arm64.sha256
 ```
 
+### Command-line installer
+
+Install or update from the latest GitHub release without `sudo`:
+
+```sh
+curl -fsSL https://floating-ayah.kiatkoding.com/install.sh | bash
+```
+
+To inspect the script before running it:
+
+```sh
+curl -fsSL https://floating-ayah.kiatkoding.com/install.sh -o /tmp/floating-ayah-install.sh
+less /tmp/floating-ayah-install.sh
+bash /tmp/floating-ayah-install.sh
+```
+
+The installer checks macOS/Apple Silicon compatibility, downloads the ZIP and
+SHA-256 manifest, verifies the archive and app signature, installs to
+`~/Applications/Floating Ayah.app`, and launches the app. It quits a running
+Floating Ayah before replacement and preserves preferences and offline audio.
+An installation failure restores the previous bundle.
+
+**Security notice:** after verification, it removes the quarantine attribute
+from this app bundle only. The current release is ad-hoc signed and not notarized
+by Apple. This is a per-app workaround, not Apple approval; a matching checksum
+checks integrity, not safety. Gatekeeper is never disabled globally. A manually
+installed copy in `/Applications` is not replaced by this installer.
+
 ## Usage
 
 | Control | Action |

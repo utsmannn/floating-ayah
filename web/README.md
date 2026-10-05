@@ -17,7 +17,27 @@ bunx tsc --noEmit
 bunx vite build
 ```
 
-Vite writes the static site to `dist/`, including the demo MP3 from `public/audio/`.
+Vite writes the static site to `dist/`, including the demo MP3 from `public/audio/`
+and the CLI installer from `public/install.sh`.
+
+## CLI installer
+
+Public URL: https://floating-ayah.kiatkoding.com/install.sh.
+
+```sh
+curl -fsSL https://floating-ayah.kiatkoding.com/install.sh | bash
+```
+
+The installer verifies the latest release ZIP and app signature, installs without
+sudo, removes quarantine only from the verified bundle, and launches the app.
+See the root README for the security notice and inspect-before-running option.
+
+On macOS, test installation and rollback with isolated local release fixtures:
+
+```sh
+# From the repository root; does not launch or quit the real app
+python3 scripts/test-installer.py
+```
 
 ## Deployment
 

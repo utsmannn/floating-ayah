@@ -56,7 +56,7 @@ To verify the download, place the DMG, ZIP, and checksum manifest in the same
 folder and run:
 
 ```sh
-shasum -a 256 -c Floating-Ayah-0.1.2-macos-arm64.sha256
+shasum -a 256 -c Floating-Ayah-0.1.3-macos-arm64.sha256
 ```
 
 ### Command-line installer
@@ -197,9 +197,9 @@ sh scripts/verify-package.sh
 Output files are placed in `dist/`, with version and architecture in their names:
 
 ```text
-Floating-Ayah-0.1.2-macos-arm64.dmg
-Floating-Ayah-0.1.2-macos-arm64.zip
-Floating-Ayah-0.1.2-macos-arm64.sha256
+Floating-Ayah-0.1.3-macos-arm64.dmg
+Floating-Ayah-0.1.3-macos-arm64.zip
+Floating-Ayah-0.1.3-macos-arm64.sha256
 ```
 
 An Intel build requires a suitable x86_64 toolchain. The scripts do not convert an
@@ -216,8 +216,8 @@ Signing does **not** notarize the package. With an Apple Developer account and a
 configured Keychain notary profile, notarize and staple the DMG separately:
 
 ```sh
-xcrun notarytool submit dist/Floating-Ayah-0.1.2-macos-arm64.dmg --keychain-profile PROFILE --wait
-xcrun stapler staple dist/Floating-Ayah-0.1.2-macos-arm64.dmg
+xcrun notarytool submit dist/Floating-Ayah-0.1.3-macos-arm64.dmg --keychain-profile PROFILE --wait
+xcrun stapler staple dist/Floating-Ayah-0.1.3-macos-arm64.dmg
 ```
 
 Regenerate the DMG checksum after stapling. A separately distributed ZIP requires

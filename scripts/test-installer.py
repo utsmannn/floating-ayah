@@ -2,7 +2,7 @@
 """Exercise the installer with local release fixtures and an isolated HOME.
 
 Run on macOS: python3 scripts/test-installer.py
-Requires the existing v0.1.2 ZIP in dist/. Never launches or quits a real app.
+Requires the existing v0.1.3 ZIP in dist/. Never launches or quits a real app.
 """
 import hashlib
 import json
@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INSTALLER = ROOT / "web/public/install.sh"
-ZIP_NAME = "Floating-Ayah-0.1.2-macos-arm64.zip"
+ZIP_NAME = "Floating-Ayah-0.1.3-macos-arm64.zip"
 SHA_NAME = ZIP_NAME[:-4] + ".sha256"
 
 
@@ -31,10 +31,10 @@ class InstallerTests(unittest.TestCase):
         self.fixtures.mkdir()
         self.zip = ROOT / "dist" / ZIP_NAME
         if not self.zip.is_file():
-            self.skipTest("Build the v0.1.2 ZIP fixture first")
+            self.skipTest("Build the v0.1.3 ZIP fixture first")
         (self.fixtures / SHA_NAME).write_text(hashlib.sha256(self.zip.read_bytes()).hexdigest() + "  " + ZIP_NAME + "\n")
-        self.release = {"tag_name": "v0.1.2", "assets": [
-            {"name": name, "browser_download_url": "https://github.com/utsmannn/floating-ayah/releases/download/v0.1.2/" + name}
+        self.release = {"tag_name": "v0.1.3", "assets": [
+            {"name": name, "browser_download_url": "https://github.com/utsmannn/floating-ayah/releases/download/v0.1.3/" + name}
             for name in [ZIP_NAME, SHA_NAME]
         ]}
         self.env = dict(os.environ, HOME=str(self.home), PATH=str(self.bin) + ":" + os.environ["PATH"])

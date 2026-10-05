@@ -7,8 +7,31 @@ struct ReciterView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker("Reciter", selection: Binding(get: { store.reciter }, set: store.selectReciter)) {
-                ForEach(Reciter.allCases) { reciter in Text(reciter.name).tag(reciter) }
+            // Same right-aligned dropdown style as the surah and font pickers.
+            HStack {
+                Text("Reciter")
+                Spacer()
+                Menu {
+                    ForEach(Reciter.allCases) { reciter in
+                        Button {
+                            store.selectReciter(reciter)
+                        } label: {
+                            if reciter == store.reciter {
+                                Label(reciter.name, systemImage: "checkmark")
+                            } else {
+                                Text(reciter.name)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text(store.reciter.name).lineLimit(1)
+                        Image(systemName: "chevron.down").font(.system(size: 9))
+                    }
+                }
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel("Reciter: \(store.reciter.name)")
             }
             .disabled(offline.isDownloading)
             HStack {

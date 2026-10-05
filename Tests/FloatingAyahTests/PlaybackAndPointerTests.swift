@@ -77,18 +77,19 @@ final class PlaybackAndPointerTests: XCTestCase {
         let document = try XCTUnwrap(scroll.renderedDocument)
         let first = try XCTUnwrap(document.absoluteReadingRange(words[0]))
         let second = try XCTUnwrap(document.absoluteReadingRange(words[1]))
-        let manager = try XCTUnwrap(view.layoutManager)
         XCTAssertEqual(scroll.highlightedWord, first)
-        XCTAssertNotNil(manager.temporaryAttribute(.backgroundColor, atCharacterIndex: first.location, effectiveRange: nil))
+        let firstFrame = try XCTUnwrap(scroll.wordMarkerFrame)
         scroll.readingRange = words[1]
         scroll.updateText()
         XCTAssertEqual(scroll.highlightedWord, second)
-        XCTAssertNil(manager.temporaryAttribute(.backgroundColor, atCharacterIndex: first.location, effectiveRange: nil))
-        XCTAssertNotNil(manager.temporaryAttribute(.underlineStyle, atCharacterIndex: second.location, effectiveRange: nil))
+        // Same line, different word: the marker must move along the line to the new word.
+        let secondFrame = try XCTUnwrap(scroll.wordMarkerFrame)
+        XCTAssertNotEqual(firstFrame.minX, secondFrame.minX)
+        XCTAssertEqual(firstFrame.midY, secondFrame.midY, accuracy: 1)
         scroll.readingRange = nil
         scroll.updateText()
         XCTAssertNil(scroll.highlightedWord)
-        XCTAssertNil(manager.temporaryAttribute(.underlineStyle, atCharacterIndex: second.location, effectiveRange: nil))
+        XCTAssertNil(scroll.wordMarkerFrame)
         XCTAssertEqual(view.string, document.text)
     }
 

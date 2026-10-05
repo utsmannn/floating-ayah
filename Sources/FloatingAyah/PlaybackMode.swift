@@ -16,6 +16,21 @@ enum PlaybackMode: String, CaseIterable, Identifiable {
         }
     }
 
+    var symbol: String {
+        switch self {
+        case .continuous: return "arrow.right"
+        case .surah: return "stop.circle"
+        case .repeatAyah: return "repeat.1"
+        case .repeatSurah: return "repeat"
+        }
+    }
+
+    /// The following mode in menu order, wrapping around.
+    var cycled: PlaybackMode {
+        let all = Self.allCases
+        return all[((all.firstIndex(of: self) ?? 0) + 1) % all.count]
+    }
+
     func next(in quran: Quran, after position: AyahPosition) -> AyahPosition? {
         switch self {
         case .continuous: return quran.nextInQuran(after: position)

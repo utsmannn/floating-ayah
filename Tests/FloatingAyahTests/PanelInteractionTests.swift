@@ -100,7 +100,6 @@ final class PanelInteractionTests: XCTestCase {
         scroll.isPlaying = true
         let words = TimedAyah.wordRanges(in: scroll.text)
         let manager = try XCTUnwrap(view.layoutManager)
-        var previous: NSRange?
         var lineChanges = 0
         var lastLineY: CGFloat?
         for word in words {
@@ -109,18 +108,107 @@ final class PanelInteractionTests: XCTestCase {
             let document = try XCTUnwrap(scroll.renderedDocument)
             let expected = try XCTUnwrap(document.absoluteReadingRange(word))
             XCTAssertEqual(scroll.highlightedWord, expected, "marker must land on the word being read")
-            XCTAssertNotNil(manager.temporaryAttribute(.underlineStyle, atCharacterIndex: expected.location, effectiveRange: nil))
-            if let previous, previous != expected {
-                XCTAssertNil(manager.temporaryAttribute(.underlineStyle, atCharacterIndex: previous.location, effectiveRange: nil),
-                             "the previous word must lose its marker")
-            }
             let glyph = manager.glyphIndexForCharacter(at: expected.location)
-            let lineY = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil).minY
+            let lineRect = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+            let lineY = lineRect.minY
+            // Layer frames use document coordinates, which include the text container's inset.
+            let originY = view.textContainerOrigin.y
+            let marker = try XCTUnwrap(scroll.wordMarkerFrame, "marker layer must target the current word")
+            XCTAssertGreaterThanOrEqual(marker.midY, lineRect.minY + originY, "marker is on the word's line")
+            XCTAssertLessThanOrEqual(marker.midY, lineRect.maxY + originY, "marker is on the word's line")
+            XCTAssertEqual(try XCTUnwrap(scroll.lineBackgroundFrame).minY, lineY + originY, accuracy: 1)
             if let lastLineY, lastLineY != lineY { lineChanges += 1 }
             lastLineY = lineY
-            previous = expected
         }
         XCTAssertGreaterThan(lineChanges, 3, "the sample must cross several line breaks")
+    }
+
+    @MainActor
+    func testSurahNavigationStartsAtAyahOneAndStopsAtTheQuranEnds() throws {
+        let suite = "FloatingAyahSurahNav.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = PlayerStore(quran: try Quran.load(), defaults: defaults)
+        XCTAssertFalse(store.canGoPreviousSurah)
+        store.previousSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 0, ayah: 0))
+        store.select(surah: 1, ayah: 40)
+        store.nextSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 2, ayah: 0))
+        XCTAssertTrue(store.isBasmalah) // Al-Imran opens with its separate basmalah.
+        store.previousSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 1, ayah: 0))
+        store.select(surah: 8, ayah: 5)
+        store.previousSurah() // Mid-surah: first press only returns to the surah's start.
+        XCTAssertEqual(store.position, AyahPosition(surah: 8, ayah: 0))
+        store.previousSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 7, ayah: 0))
+        store.nextSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 8, ayah: 0))
+        XCTAssertFalse(store.isBasmalah) // At-Tawbah has no basmalah.
+        store.select(surah: 113, ayah: 2)
+        XCTAssertFalse(store.canGoNextSurah)
+        store.nextSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 113, ayah: 2))
+        XCTAssertEqual(defaults.integer(forKey: "surah"), 113)
+    }
+
+    @MainActor
+    func testPreviousFirstRestartsThenGoesBackForAyahAndSurah() throws {
+        let suite = "FloatingAyahRestart.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = PlayerStore(quran: try Quran.load(), defaults: defaults)
+        store.select(surah: 1, ayah: 5)
+        XCTAssertEqual(store.previousAyahLabel, "Previous ayah")
+        store.elapsed = 5 // Playing for a while.
+        XCTAssertEqual(store.previousAyahLabel, "Restart ayah")
+        store.previous()
+        XCTAssertEqual(store.position, AyahPosition(surah: 1, ayah: 5), "first press restarts the ayah")
+        XCTAssertEqual(store.elapsed, 0)
+        store.previous()
+        XCTAssertEqual(store.position, AyahPosition(surah: 1, ayah: 4), "second press goes to the previous ayah")
+        // Surah: mid-surah restarts at its opening, then the next press goes back a surah.
+        store.select(surah: 1, ayah: 40)
+        XCTAssertEqual(store.previousSurahLabel, "Restart surah")
+        store.previousSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 1, ayah: 0))
+        XCTAssertTrue(store.isBasmalah, "restarting a surah returns to its basmalah")
+        XCTAssertEqual(store.previousSurahLabel, "Previous surah")
+        store.previousSurah()
+        XCTAssertEqual(store.position, AyahPosition(surah: 0, ayah: 0))
+        // Ayah 1 after the basmalah is not the start of the surah yet.
+        store.select(surah: 1, ayah: 0)
+        store.next()
+        XCTAssertFalse(store.isBasmalah)
+        store.previousSurah()
+        XCTAssertTrue(store.isBasmalah)
+        XCTAssertEqual(store.position.surah, 1)
+        // At the very start of the Quran, a played ayah still restarts but nothing goes before it.
+        store.select(surah: 0, ayah: 0)
+        XCTAssertFalse(store.canGoPrevious)
+        store.elapsed = 4
+        XCTAssertTrue(store.canGoPrevious)
+        XCTAssertTrue(store.canGoPreviousSurah)
+    }
+
+    @MainActor
+    func testPlaybackModeCyclesThroughEveryModeAndPersists() throws {
+        let suite = "FloatingAyahModeCycle.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let quran = try Quran.load()
+        let store = PlayerStore(quran: quran, defaults: defaults)
+        var seen: [PlaybackMode] = [store.playbackMode]
+        for _ in PlaybackMode.allCases.indices {
+            store.cyclePlaybackMode()
+            seen.append(store.playbackMode)
+        }
+        XCTAssertEqual(seen.first, seen.last)
+        XCTAssertEqual(Set(seen.dropLast()), Set(PlaybackMode.allCases))
+        XCTAssertEqual(Set(PlaybackMode.allCases.map(\.symbol)).count, PlaybackMode.allCases.count)
+        store.cyclePlaybackMode()
+        XCTAssertEqual(PlayerStore(quran: quran, defaults: defaults).playbackMode, store.playbackMode)
     }
 
     func testInlineToggleRebuildsTextAndKeepsAutomaticFollowing() throws {
@@ -163,29 +251,73 @@ final class PanelInteractionTests: XCTestCase {
         scroll.lyricAppearance.backgroundColor = LyricColor(red: 0.2, green: 0.4, blue: 0.6)
         scroll.lyricAppearance.backgroundOpacity = 0.5
         let words = TimedAyah.wordRanges(in: scroll.text)
+        let manager = try XCTUnwrap(view.layoutManager)
+        func lineMinY(of word: NSRange) throws -> CGFloat {
+            let document = try XCTUnwrap(scroll.renderedDocument)
+            let range = try XCTUnwrap(document.absoluteReadingRange(word))
+            return manager.lineFragmentRect(forGlyphAt: manager.glyphIndexForCharacter(at: range.location),
+                                            effectiveRange: nil).minY + view.textContainerOrigin.y
+        }
         scroll.readingRange = words[0]
         scroll.updateText()
-        let manager = try XCTUnwrap(view.layoutManager)
-        let document = try XCTUnwrap(scroll.renderedDocument)
-        let first = try XCTUnwrap(document.absoluteReadingRange(words[0]))
-        func background(at index: Int) -> NSColor? {
-            manager.temporaryAttribute(.backgroundColor, atCharacterIndex: index, effectiveRange: nil) as? NSColor
-        }
-        // Characters on the active line (not the word marker) carry the configured color.
-        let lineEnd = first.location + first.length + 12
-        let onLine = try XCTUnwrap(background(at: min(lineEnd, document.currentRange.length)))
-        XCTAssertEqual(onLine.alphaComponent, 0.5, accuracy: 0.01)
-        // The previous/next ayahs and unread lines have no line background.
+        let first = try XCTUnwrap(scroll.lineBackgroundFrame)
+        XCTAssertEqual(first.minY, try lineMinY(of: words[0]), accuracy: 1)
+        XCTAssertEqual(first.width, scroll.contentSize.width, accuracy: 1) // One full line, not the panel.
+        // The background follows the read line down the ayah.
         scroll.readingRange = words[words.count - 1]
         scroll.updateText()
-        XCTAssertNil(background(at: first.location + 30))
-        let last = try XCTUnwrap(scroll.renderedDocument?.absoluteReadingRange(words[words.count - 1]))
-        XCTAssertNotNil(background(at: last.location))
+        let last = try XCTUnwrap(scroll.lineBackgroundFrame)
+        XCTAssertEqual(last.minY, try lineMinY(of: words[words.count - 1]), accuracy: 1)
+        XCTAssertGreaterThan(last.minY, first.minY)
+        // Opacity 0 removes it completely.
         scroll.lyricAppearance.backgroundOpacity = 0
         scroll.updateText()
-        scroll.readingRange = words[0]
+        XCTAssertNil(scroll.lineBackgroundFrame)
+    }
+
+    func testUnderlineSitsAtTheBottomOfTheWordBox() throws {
+        let (scroll, _) = makeLyrics()
+        scroll.reduceMotion = true
+        scroll.readingRange = TimedAyah.wordRanges(in: scroll.text).first
         scroll.updateText()
-        XCTAssertNil(background(at: min(lineEnd, document.currentRange.length)))
+        let word = scroll.wordLayer
+        let underline = scroll.underlineLayer
+        XCTAssertGreaterThan(word.bounds.height, underline.frame.height)
+        // Convert to the visual bottom whatever the layer's coordinate direction is.
+        let visualBottom = word.contentsAreFlipped() ? underline.frame.maxY : underline.frame.minY
+        let expected = word.contentsAreFlipped() ? word.bounds.height : 0
+        XCTAssertEqual(visualBottom, expected, accuracy: 0.5, "underline must hug the bottom of the word")
+        XCTAssertEqual(underline.frame.width, word.bounds.width, accuracy: 0.5)
+    }
+
+    func testMarkerSurvivesAyahChangeSoItCanGlideToTheNextAyah() throws {
+        let (scroll, _) = makeLyrics()
+        scroll.lyricAppearance.continuousText = true
+        scroll.isPlaying = true
+        let ayahs = [LyricSegment(text: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", number: 1),
+                     LyricSegment(text: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ", number: 2)]
+        scroll.surahBefore = []
+        scroll.surahAfter = [ayahs[1]]
+        scroll.text = ayahs[0].text
+        scroll.currentNumber = 1
+        let words = TimedAyah.wordRanges(in: scroll.text)
+        scroll.readingRange = words.last
+        scroll.updateText()
+        XCTAssertNotNil(scroll.wordMarkerFrame)
+        // The next ayah starts: same surah text, new current ayah, no timed word yet.
+        scroll.surahBefore = [ayahs[0]]
+        scroll.surahAfter = []
+        scroll.text = ayahs[1].text
+        scroll.currentNumber = 2
+        scroll.readingRange = nil
+        scroll.updateText()
+        XCTAssertNotNil(scroll.wordMarkerFrame, "the marker must stay put so it can travel to the first word")
+        // The first word of the new ayah then receives the marker.
+        scroll.readingRange = TimedAyah.wordRanges(in: scroll.text).first
+        scroll.updateText()
+        let document = try XCTUnwrap(scroll.renderedDocument)
+        let first = try XCTUnwrap(document.absoluteReadingRange(TimedAyah.wordRanges(in: scroll.text).first))
+        XCTAssertEqual(scroll.highlightedWord, first)
     }
 
     func testWheelCannotMoveLyricsButAutomaticFollowerStillCan() throws {

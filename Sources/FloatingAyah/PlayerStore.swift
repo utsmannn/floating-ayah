@@ -14,7 +14,7 @@ final class PlayerStore: ObservableObject {
     @Published private(set) var isPlaying = false
     @Published private(set) var isBuffering = false
     @Published private(set) var errorMessage: String?
-    @Published private(set) var elapsed: Double = 0
+    @Published var elapsed: Double = 0
     @Published private(set) var duration: Double = 0
     @Published private(set) var readingRange: NSRange?
     private var wordTimings: WordTimings?
@@ -96,7 +96,16 @@ final class PlayerStore: ObservableObject {
         guard let entry = nextDisplayEntry, !entry.isBasmalah else { return nil }
         return quran.surahs[entry.position.surah].ayahs[entry.position.ayah].number
     }
-    var canGoPrevious: Bool { quran.previousInQuran(before: position) != nil }
+    /// Past this many seconds, "previous" restarts the current item instead of moving back.
+    static let restartThreshold: Double = 2
+    var isAtAyahStart: Bool { isSurahPause || elapsed <= Self.restartThreshold }
+    var isAtSurahStart: Bool {
+        let opensSurah = isBasmalah || quran.basmalah(at: AyahPosition(surah: position.surah, ayah: 0)) == nil
+        return isSurahPause || (position.ayah == 0 && opensSurah && elapsed <= Self.restartThreshold)
+    }
+    var previousAyahLabel: String { isAtAyahStart ? "Previous ayah" : "Restart ayah" }
+    var previousSurahLabel: String { isAtSurahStart ? "Previous surah" : "Restart surah" }
+    var canGoPrevious: Bool { !isAtAyahStart || quran.previousInQuran(before: position) != nil }
     var canGoNext: Bool { isBasmalah || quran.nextInQuran(after: position) != nil }
     var progress: Double { duration > 0 ? min(1, elapsed / duration) : 0 }
     var actionLabel: String { isPlaying ? "Pause" : "Play" }
@@ -201,7 +210,26 @@ final class PlayerStore: ObservableObject {
         rebuildQueue(play: isPlaying)
     }
 
+    var canGoPreviousSurah: Bool { !isAtSurahStart || position.surah > 0 }
+    var canGoNextSurah: Bool { position.surah < quran.surahs.count - 1 }
+
+    func previousSurah() {
+        // First press returns to the start of this surah; a second press goes back one.
+        if !isAtSurahStart { select(surah: position.surah); return }
+        guard position.surah > 0 else { return }
+        select(surah: position.surah - 1)
+    }
+
+    func nextSurah() {
+        guard canGoNextSurah else { return }
+        select(surah: position.surah + 1)
+    }
+
+    func cyclePlaybackMode() { playbackMode = playbackMode.cycled }
+
     func previous() {
+        // First press restarts this ayah; a second press goes back one.
+        if !isAtAyahStart { rebuildQueue(play: isPlaying); return }
         guard let previous = quran.previousInQuran(before: position) else { return }
         select(surah: previous.surah, ayah: previous.ayah)
     }

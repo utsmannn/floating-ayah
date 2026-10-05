@@ -98,6 +98,12 @@ final class LyricsScrollView: NSScrollView {
     private var lastLineY: CGFloat?
     private var highlightedLine: NSRange?
     private(set) var highlightedWord: NSRange?
+    /// Target frames of the animated highlight layers, in document coordinates.
+    private(set) var wordMarkerFrame: NSRect?
+    private(set) var lineBackgroundFrame: NSRect?
+    private let lineLayer = CALayer()
+    let wordLayer = CALayer()
+    let underlineLayer = CALayer()
     private var scrollTimer: Timer?
     private var animationStart: CFTimeInterval = 0
     private var animationFrom: CGFloat = 0
@@ -110,7 +116,7 @@ final class LyricsScrollView: NSScrollView {
         guard !updating else { return }
         let widthChanged = measuredWidth != contentSize.width
         layoutDocument()
-        if widthChanged { lastLineY = nil; highlightedLine = nil }
+        if widthChanged { lastLineY = nil; highlightedLine = nil; highlightedWord = nil }
         followReading()
     }
 
@@ -118,6 +124,7 @@ final class LyricsScrollView: NSScrollView {
         guard let view = documentView as? ClickableAyahView else { return }
         updating = true
         defer { updating = false }
+        view.wantsLayer = true
         let document: LyricsDocument
         if lyricAppearance.continuousText, let before = surahBefore, let after = surahAfter {
             document = LyricsDocument(before: before, current: text, currentNumber: currentNumber, after: after)
@@ -176,7 +183,10 @@ final class LyricsScrollView: NSScrollView {
             view.layoutManager?.usesFontLeading = false
             view.textStorage?.setAttributedString(styled)
             view.layoutManager?.removeTemporaryAttribute(.foregroundColor, forCharacterRange: full)
-            clearWordPointer(manager: view.layoutManager)
+            // Same surah text: the old word's frame is still valid, so keep the marker and let it
+            // glide from the last word of the previous ayah to the first word of this one.
+            let keepsMarker = !styleChanged && !sectionChanged && oldDocument?.text == document.text
+            if !keepsMarker { clearWordPointer(manager: view.layoutManager) }
             measuredWidth = 0
             lastLineY = nil
             highlightedLine = nil
@@ -265,10 +275,10 @@ final class LyricsScrollView: NSScrollView {
         guard let active = activeRange ?? startOfAyah else {
             if highlightedLine != nil {
                 manager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: document.currentRange)
-                removeLineBackground(manager: manager)
                 highlightedLine = nil
+                refreshMarkers(animated: false)
             }
-            updateWordPointer(activeRange, manager: manager)
+            syncWordPointer(activeRange, manager: manager)
             return
         }
         let glyph = manager.glyphIndexForCharacter(at: active.location)
@@ -276,68 +286,117 @@ final class LyricsScrollView: NSScrollView {
         _ = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: &glyphRange)
         let characterRange = NSIntersectionRange(manager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil), document.currentRange)
         guard highlightedLine != characterRange else {
-            updateWordPointer(activeRange, manager: manager)
+            syncWordPointer(activeRange, manager: manager)
             return
         }
-        // Strip the old word's marker while the old line is still known, then switch lines.
-        clearWordPointer(manager: manager)
-        removeLineBackground(manager: manager)
+        if highlightedLine != nil, !reduceMotion, window != nil {
+            // Crossfade the ayah/line brightness; attributes alone cannot be interpolated.
+            let fade = CATransition()
+            fade.type = .fade
+            fade.duration = 0.28
+            fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            documentView?.layer?.add(fade, forKey: "line-change")
+        }
         highlightedLine = characterRange
         manager.addTemporaryAttribute(.foregroundColor,
                                       value: lyricAppearance.textColor.nsColor.withAlphaComponent(0.55),
                                       forCharacterRange: document.currentRange)
         manager.addTemporaryAttribute(.foregroundColor, value: lyricAppearance.textColor.nsColor, forCharacterRange: characterRange)
-        if lyricAppearance.backgroundOpacity > 0 {
-            manager.addTemporaryAttribute(.backgroundColor, value: lineBackground, forCharacterRange: characterRange)
-        }
-        // Mark the word being read now, not the previous one, or the marker sticks to the
-        // last word of the previous line.
-        updateWordPointer(readingRange == nil ? nil : activeRange, manager: manager)
+        refreshMarkers(animated: true)
+        syncWordPointer(activeRange, manager: manager)
     }
 
-    private var lineBackground: NSColor {
-        lyricAppearance.backgroundColor.nsColor.withAlphaComponent(lyricAppearance.backgroundOpacity)
-    }
-
-    private func removeLineBackground(manager: NSLayoutManager) {
-        guard let line = highlightedLine else { return }
-        let range = NSIntersectionRange(line, NSRange(location: 0, length: manager.textStorage?.length ?? 0))
-        if range.length > 0 { manager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: range) }
+    /// While playing, the timed word is unknown for a moment after each ayah starts. Keep the
+    /// previous marker in place during that gap so it can travel to the new first word.
+    private func syncWordPointer(_ range: NSRange?, manager: NSLayoutManager) {
+        if range == nil, isPlaying, highlightedWord != nil { return }
+        updateWordPointer(range, manager: manager)
     }
 
     private func clearWordPointer(manager: NSLayoutManager?) {
-        guard let previous = highlightedWord else { return }
-        // A document replacement can make the old range invalid. Clamp removal
-        // to the new storage; never touch Quran text or its shaping attributes.
-        let length = manager?.textStorage?.length ?? 0
-        let range = NSIntersectionRange(previous, NSRange(location: 0, length: length))
-        if range.length > 0 {
-            for key: NSAttributedString.Key in [.backgroundColor, .underlineStyle, .underlineColor] {
-                manager?.removeTemporaryAttribute(key, forCharacterRange: range)
-            }
-            // Restore the line background under the word marker that was just removed.
-            if let line = highlightedLine, lyricAppearance.backgroundOpacity > 0 {
-                let covered = NSIntersectionRange(range, line)
-                if covered.length > 0 {
-                    manager?.addTemporaryAttribute(.backgroundColor, value: lineBackground, forCharacterRange: covered)
-                }
-            }
-        }
         highlightedWord = nil
+        refreshMarkers(animated: false)
     }
 
     private func updateWordPointer(_ range: NSRange?, manager: NSLayoutManager) {
         guard highlightedWord != range else { return }
-        clearWordPointer(manager: manager)
-        guard let range else { return }
         highlightedWord = range
-        // A translucent marker + underline distinguishes the exact timed word
-        // from its already-bright line, without changing Arabic glyph layout.
-        manager.addTemporaryAttributes([
-            .backgroundColor: lyricAppearance.textColor.nsColor.withAlphaComponent(0.18),
-            .underlineStyle: NSUnderlineStyle.single.rawValue,
-            .underlineColor: lyricAppearance.textColor.nsColor
-        ], forCharacterRange: range)
+        refreshMarkers(animated: true)
+    }
+
+    // MARK: Animated highlight layers
+
+    /// The word box, underline and line background live behind the text as plain layers,
+    /// so their frames can glide between words and lines instead of jumping.
+    private func installLayers() -> CALayer? {
+        contentView.wantsLayer = true
+        guard let host = contentView.layer else { return nil }
+        if lineLayer.superlayer !== host {
+            lineLayer.opacity = 0
+            wordLayer.opacity = 0
+            wordLayer.cornerRadius = 4
+            wordLayer.addSublayer(underlineLayer)
+            host.insertSublayer(lineLayer, at: 0)
+            host.insertSublayer(wordLayer, above: lineLayer)
+        }
+        return host
+    }
+
+    private func firstLineRect(for range: NSRange) -> NSRect? {
+        guard let view = documentView as? NSTextView, let manager = view.layoutManager,
+              let container = view.textContainer, range.length > 0,
+              NSMaxRange(range) <= (manager.textStorage?.length ?? 0) else { return nil }
+        manager.ensureLayout(for: container)
+        var first: NSRect?
+        let glyphs = manager.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+        manager.enumerateEnclosingRects(forGlyphRange: glyphs, withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                                        in: container) { rect, stop in
+            first = rect
+            stop.pointee = true
+        }
+        return first.map { $0.offsetBy(dx: view.textContainerOrigin.x, dy: view.textContainerOrigin.y) }
+    }
+
+    private func place(_ layer: CALayer, frame: NSRect?, animated: Bool) {
+        let visible = layer.opacity > 0
+        let duration = animated && !reduceMotion && window != nil && visible ? 0.24 : 0
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(duration)
+        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
+        if duration == 0 { CATransaction.setDisableActions(true) }
+        if let frame {
+            layer.frame = frame
+            layer.opacity = 1
+        } else {
+            layer.opacity = 0
+        }
+        CATransaction.commit()
+    }
+
+    private func refreshMarkers(animated: Bool) {
+        guard installLayers() != nil, let view = documentView as? NSTextView,
+              let manager = view.layoutManager else { return }
+        let text = lyricAppearance.textColor.nsColor
+        wordLayer.backgroundColor = text.withAlphaComponent(0.18).cgColor
+        underlineLayer.backgroundColor = text.cgColor
+        lineLayer.backgroundColor = lyricAppearance.backgroundColor.nsColor
+            .withAlphaComponent(lyricAppearance.backgroundOpacity).cgColor
+        wordMarkerFrame = highlightedWord.flatMap { firstLineRect(for: $0) }
+        place(wordLayer, frame: wordMarkerFrame, animated: animated)
+        // The clip view's layer is flipped, which flips this sublayer's own coordinates too.
+        let thickness: CGFloat = 2
+        let height = wordMarkerFrame?.height ?? 0
+        underlineLayer.frame = NSRect(x: 0, y: wordLayer.contentsAreFlipped() ? height - thickness : 0,
+                                      width: wordMarkerFrame?.width ?? 0, height: thickness)
+        var lineFrame: NSRect?
+        if lyricAppearance.backgroundOpacity > 0, let line = highlightedLine, line.length > 0,
+           line.location < (manager.textStorage?.length ?? 0) {
+            let glyph = manager.glyphIndexForCharacter(at: line.location)
+            lineFrame = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+                .offsetBy(dx: view.textContainerOrigin.x, dy: view.textContainerOrigin.y)
+        }
+        lineBackgroundFrame = lineFrame
+        place(lineLayer, frame: lineFrame, animated: animated)
     }
 
     private func boundedOffset(_ offset: CGFloat) -> CGFloat {

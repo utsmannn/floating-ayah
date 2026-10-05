@@ -81,16 +81,22 @@ struct PanelView: View {
                 .accessibilityHidden(!showsControls)
             }
             .overlay(alignment: .bottom) {
-                HStack(spacing: 14) {
-                    control("repeat.1", label: store.repeatsAyah ? "Turn off ayah repeat" : "Repeat current ayah", action: { store.repeatsAyah.toggle() })
-                        .foregroundStyle(store.repeatsAyah ? Color.accentColor : Color.white)
+                HStack(spacing: 4) {
+                    control(store.playbackMode.symbol,
+                            label: "Playback mode: \(store.playbackMode.title). Click to change.",
+                            action: store.cyclePlaybackMode)
+                        .foregroundStyle(store.playbackMode == .continuous ? Color.white : Color.accentColor)
                     Spacer(minLength: 0)
-                    control("backward.end.fill", label: "Previous ayah", action: store.previous)
+                    control("backward.fill", label: store.previousSurahLabel, action: store.previousSurah)
+                        .disabled(!store.canGoPreviousSurah)
+                    control("backward.end.fill", label: store.previousAyahLabel, action: store.previous)
                         .disabled(!store.canGoPrevious)
                     control(store.actionIcon, label: store.actionLabel, action: store.togglePlayback)
                         .keyboardShortcut(.space, modifiers: [])
                     control("forward.end.fill", label: "Next ayah", action: store.next)
                         .disabled(!store.canGoNext)
+                    control("forward.fill", label: "Next surah", action: store.nextSurah)
+                        .disabled(!store.canGoNextSurah)
                     Spacer(minLength: 0)
                     if store.errorMessage != nil {
                         control("arrow.clockwise", label: "Retry audio", action: store.retry)
@@ -124,7 +130,7 @@ struct PanelView: View {
         Button(action: action) {
             Image(systemName: image)
                 .font(.system(size: 14, weight: .medium))
-                .frame(width: 30, height: 30)
+                .frame(width: 28, height: 30)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)

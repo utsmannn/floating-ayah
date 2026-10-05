@@ -7,17 +7,25 @@ struct AppearanceSettingsView: View {
     var body: some View {
         DisclosureGroup("Ayah appearance", isExpanded: $expanded) {
             VStack(alignment: .leading, spacing: 12) {
-                ColorPicker("Text color", selection: Binding(
-                    get: { store.appearance.textColor.color },
-                    set: { store.appearance.textColor = LyricColor($0) }
-                ), supportsOpacity: false)
+                FontPicker(selection: $store.fontName)
+                setting("Font size", value: $store.fontSize, range: 22...42, unit: "pt")
+                Toggle("Continuous text", isOn: $store.appearance.continuousText)
+                    .toggleStyle(.checkbox)
+                    .help("Let adjacent ayahs and basmalah flow together without forced line breaks")
+                ColorWellButton(title: "Text color", color: $store.appearance.textColor)
+                ColorWellButton(title: "Line background color", color: $store.appearance.backgroundColor)
+                HStack {
+                    Text("Line background opacity")
+                    Spacer()
+                    Text("\(Int((store.appearance.backgroundOpacity * 100).rounded()))%")
+                        .foregroundStyle(.secondary).monospacedDigit()
+                }
+                Slider(value: $store.appearance.backgroundOpacity, in: 0...1, step: 0.05)
+                    .accessibilityLabel("Line background opacity")
                 Toggle("Text shadow", isOn: $store.appearance.shadowEnabled)
                     .toggleStyle(.checkbox)
                 Group {
-                    ColorPicker("Shadow color", selection: Binding(
-                        get: { store.appearance.shadowColor.color },
-                        set: { store.appearance.shadowColor = LyricColor($0) }
-                    ), supportsOpacity: false)
+                    ColorWellButton(title: "Shadow color", color: $store.appearance.shadowColor)
                     setting("Shadow depth", value: $store.appearance.shadowDepth, range: 0...16, unit: "pt")
                     setting("Blur", value: $store.appearance.shadowBlur, range: 0...20, unit: "pt")
                     HStack {

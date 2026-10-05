@@ -9,10 +9,11 @@ enum ArabicTypography {
     }
 
     static func attributed(_ text: String, size: Double, fontName: String = ArabicFonts.defaultName,
-                           spacing: Double = 6) -> NSAttributedString {
+                           spacing: Double = 6, justified: Bool = false) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.baseWritingDirection = .rightToLeft
-        paragraph.alignment = .right
+        // Justified text gives continuous mode an even left edge; the last line stays right-aligned.
+        paragraph.alignment = justified ? .justified : .right
         // Quran fonts reserve very tall typographic leading. Use one compact
         // baseline rhythm for both wrapping and paragraph boundaries instead.
         paragraph.lineSpacing = 0

@@ -12,6 +12,7 @@ struct FloatingAyahApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @StateObject private var store: PlayerStore
     @StateObject private var panel: PanelController
+    private let mediaControls: MediaControls
     private static let menuIcon: NSImage = {
         let image = Quran.resourceBundle.url(forResource: "MenuBarIcon", withExtension: "png")
             .flatMap { NSImage(contentsOf: $0) }
@@ -25,6 +26,7 @@ struct FloatingAyahApp: App {
         do {
             let player = PlayerStore(quran: try Quran.load())
             let controller = PanelController(store: player)
+            mediaControls = MediaControls(store: player)
             _store = StateObject(wrappedValue: player)
             _panel = StateObject(wrappedValue: controller)
             controller.show()

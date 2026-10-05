@@ -11,6 +11,9 @@ struct LyricsText: NSViewRepresentable {
     let currentNumber: Int?
     let previousNumber: Int?
     let nextNumber: Int?
+    var surahBefore: [LyricSegment]?
+    var surahAfter: [LyricSegment]?
+    var isPlaying = false
     let fontSize: Double
     let fontName: String
     let appearance: LyricAppearance
@@ -51,6 +54,9 @@ struct LyricsText: NSViewRepresentable {
         scroll.currentNumber = currentNumber
         scroll.previousNumber = previousNumber
         scroll.nextNumber = nextNumber
+        scroll.surahBefore = surahBefore
+        scroll.surahAfter = surahAfter
+        scroll.isPlaying = isPlaying
         scroll.fontSize = fontSize
         scroll.fontName = fontName
         scroll.lyricAppearance = appearance
@@ -75,6 +81,9 @@ final class LyricsScrollView: NSScrollView {
     var currentNumber: Int?
     var previousNumber: Int?
     var nextNumber: Int?
+    var surahBefore: [LyricSegment]?
+    var surahAfter: [LyricSegment]?
+    var isPlaying = false
     var fontSize: Double = 30
     var fontName = ArabicFonts.defaultName
     var lyricAppearance = LyricAppearance()
@@ -109,8 +118,14 @@ final class LyricsScrollView: NSScrollView {
         guard let view = documentView as? ClickableAyahView else { return }
         updating = true
         defer { updating = false }
-        let document = LyricsDocument(current: text, previous: previousText, next: nextText,
-                                      currentNumber: currentNumber, previousNumber: previousNumber, nextNumber: nextNumber)
+        let document: LyricsDocument
+        if lyricAppearance.continuousText, let before = surahBefore, let after = surahAfter {
+            document = LyricsDocument(before: before, current: text, currentNumber: currentNumber, after: after)
+        } else {
+            document = LyricsDocument(current: text, previous: previousText, next: nextText,
+                                      currentNumber: currentNumber, previousNumber: previousNumber, nextNumber: nextNumber,
+                                      continuousText: lyricAppearance.continuousText)
+        }
         let sectionChanged = renderedSurahIndex != nil &&
             (renderedSurahIndex != surahIndex || (isOpeningPause && !renderedOpeningPause))
         renderedSurahIndex = surahIndex
@@ -137,7 +152,8 @@ final class LyricsScrollView: NSScrollView {
             renderedAppearance = lyricAppearance
             let styled = NSMutableAttributedString(attributedString:
                 ArabicTypography.attributed(document.text, size: fontSize, fontName: fontName,
-                                           spacing: lyricAppearance.lineSpacing))
+                                           spacing: lyricAppearance.lineSpacing,
+                                           justified: lyricAppearance.continuousText))
             let full = NSRange(location: 0, length: styled.length)
             styled.addAttribute(.foregroundColor, value: lyricAppearance.textColor.nsColor.withAlphaComponent(0.3), range: full)
             styled.addAttribute(.foregroundColor, value: lyricAppearance.textColor.nsColor, range: document.currentRange)
@@ -167,7 +183,11 @@ final class LyricsScrollView: NSScrollView {
             layoutDocument()
             // On natural advancement, the old current ayah becomes the new
             // previous ayah. Preserve its screen position before moving onward.
-            if documentChanged, !styleChanged, !sectionChanged, let oldDocument, let previous = document.previousRange,
+            if documentChanged, !styleChanged, !sectionChanged, lyricAppearance.continuousText,
+               let oldDocument, oldDocument.text == document.text {
+                // Same surah text: only the current ayah moved, so nothing reflows.
+                setScroll(oldOffset)
+            } else if documentChanged, !styleChanged, !sectionChanged, let oldDocument, let previous = document.previousRange,
                (document.text as NSString).substring(with: previous)
                     == (oldDocument.text as NSString).substring(with: oldDocument.currentRange),
                let oldCurrentY, let newPreviousY = lineRect(for: previous)?.minY {
@@ -238,24 +258,51 @@ final class LyricsScrollView: NSScrollView {
 
     private func updateHighlight(document: LyricsDocument, manager: NSLayoutManager) {
         let activeRange = document.absoluteReadingRange(readingRange)
-        updateWordPointer(activeRange, manager: manager)
-        guard let active = activeRange else {
+        // Between ayahs the timed word is briefly unknown. While playing, keep the highlight on the
+        // ayah's first line so the whole ayah never flashes bright and then jumps to one line.
+        let startOfAyah = isPlaying && document.currentRange.length > 0
+            ? NSRange(location: document.currentRange.location, length: 1) : nil
+        guard let active = activeRange ?? startOfAyah else {
             if highlightedLine != nil {
                 manager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: document.currentRange)
+                removeLineBackground(manager: manager)
                 highlightedLine = nil
             }
+            updateWordPointer(activeRange, manager: manager)
             return
         }
         let glyph = manager.glyphIndexForCharacter(at: active.location)
         var glyphRange = NSRange()
         _ = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: &glyphRange)
         let characterRange = NSIntersectionRange(manager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil), document.currentRange)
-        guard highlightedLine != characterRange else { return }
+        guard highlightedLine != characterRange else {
+            updateWordPointer(activeRange, manager: manager)
+            return
+        }
+        // Strip the old word's marker while the old line is still known, then switch lines.
+        clearWordPointer(manager: manager)
+        removeLineBackground(manager: manager)
         highlightedLine = characterRange
         manager.addTemporaryAttribute(.foregroundColor,
                                       value: lyricAppearance.textColor.nsColor.withAlphaComponent(0.55),
                                       forCharacterRange: document.currentRange)
         manager.addTemporaryAttribute(.foregroundColor, value: lyricAppearance.textColor.nsColor, forCharacterRange: characterRange)
+        if lyricAppearance.backgroundOpacity > 0 {
+            manager.addTemporaryAttribute(.backgroundColor, value: lineBackground, forCharacterRange: characterRange)
+        }
+        // Mark the word being read now, not the previous one, or the marker sticks to the
+        // last word of the previous line.
+        updateWordPointer(readingRange == nil ? nil : activeRange, manager: manager)
+    }
+
+    private var lineBackground: NSColor {
+        lyricAppearance.backgroundColor.nsColor.withAlphaComponent(lyricAppearance.backgroundOpacity)
+    }
+
+    private func removeLineBackground(manager: NSLayoutManager) {
+        guard let line = highlightedLine else { return }
+        let range = NSIntersectionRange(line, NSRange(location: 0, length: manager.textStorage?.length ?? 0))
+        if range.length > 0 { manager.removeTemporaryAttribute(.backgroundColor, forCharacterRange: range) }
     }
 
     private func clearWordPointer(manager: NSLayoutManager?) {
@@ -267,6 +314,13 @@ final class LyricsScrollView: NSScrollView {
         if range.length > 0 {
             for key: NSAttributedString.Key in [.backgroundColor, .underlineStyle, .underlineColor] {
                 manager?.removeTemporaryAttribute(key, forCharacterRange: range)
+            }
+            // Restore the line background under the word marker that was just removed.
+            if let line = highlightedLine, lyricAppearance.backgroundOpacity > 0 {
+                let covered = NSIntersectionRange(range, line)
+                if covered.length > 0 {
+                    manager?.addTemporaryAttribute(.backgroundColor, value: lineBackground, forCharacterRange: covered)
+                }
             }
         }
         highlightedWord = nil
@@ -316,8 +370,8 @@ final class LyricsScrollView: NSScrollView {
     }
 
     override func scrollWheel(with event: NSEvent) {
-        stopAnimation()
-        super.scrollWheel(with: event)
+        // Ignore manual scrolling without interrupting the recitation follower.
+        // Mouse dragging remains handled by WindowDrag on the hosting ancestor.
     }
 
     func stopAnimation() {

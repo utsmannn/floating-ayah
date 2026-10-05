@@ -64,18 +64,6 @@ struct MenuView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                FontPicker(selection: $store.fontName)
-                HStack {
-                    Text("Text size")
-                    Spacer()
-                    Text("\(Int(store.fontSize)) pt").foregroundStyle(.secondary).monospacedDigit()
-                }
-                Slider(value: $store.fontSize, in: 22...42, step: 1)
-                    .accessibilityLabel("Arabic text size")
-            }
-            .font(.system(size: 12))
-
             AppearanceSettingsView(store: store)
 
             OfflineAudioView(offline: store.offline, quran: store.quran)

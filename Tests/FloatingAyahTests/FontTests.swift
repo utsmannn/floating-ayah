@@ -31,7 +31,7 @@ final class FontTests: XCTestCase {
         let layout = PanelLayout(text: quran.surahs[1].ayahs[281].text, fontSize: 30,
                                  availableHeight: 900, fontName: name)
         XCTAssertEqual(layout.textHeight, ArabicTypography.height(for: quran.surahs[1].ayahs[281].text,
-                                                                 size: 30, width: 364, fontName: name))
+                                                                 size: 30, width: layout.contentWidth, fontName: name))
         XCTAssertEqual(PanelLayout.width, 420)
     }
 }

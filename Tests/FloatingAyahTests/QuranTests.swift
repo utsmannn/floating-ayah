@@ -44,7 +44,7 @@ final class QuranTests: XCTestCase {
         XCTAssertFalse(short.needsScroll)
         XCTAssertLessThanOrEqual(long.height, 800)
         XCTAssertEqual(PanelLayout.width, 420)
-        XCTAssertEqual(PanelLayout.textWidth, 364)
+        XCTAssertEqual(PanelLayout.textWidth, 420)
         let large = PanelLayout(text: quran.surahs[1].ayahs[281].text, fontSize: 42, availableHeight: 600)
         XCTAssertGreaterThan(large.textHeight, long.textHeight)
         XCTAssertLessThanOrEqual(large.height, 600)

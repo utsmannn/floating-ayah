@@ -23,8 +23,13 @@ final class AppearanceTests: XCTestCase {
         store.appearance.panelWidth = 640
         store.appearance.lineSpacing = 14
         store.appearance.ayahNumberScale = 1.1
+        store.appearance.continuousText = true
+        store.appearance.backgroundColor = LyricColor(red: 0.1, green: 0.3, blue: 0.5)
+        store.appearance.backgroundOpacity = 0.4
+        store.fontSize = 38
         let restored = PlayerStore(quran: quran, defaults: defaults)
         XCTAssertEqual(restored.appearance, store.appearance)
+        XCTAssertEqual(restored.fontSize, 38)
         XCTAssertEqual(restored.appearance.shadow?.shadowOffset.height, -8)
         restored.appearance.shadowEnabled = false
         XCTAssertNil(restored.appearance.shadow)
@@ -32,11 +37,13 @@ final class AppearanceTests: XCTestCase {
         invalid.panelWidth = 9999
         invalid.shadowDepth = -4
         invalid.shadowOpacity = 9
+        invalid.backgroundOpacity = 7
         invalid.save(to: defaults)
         let valid = LyricAppearance.load(from: defaults)
         XCTAssertEqual(valid.panelWidth, 800)
         XCTAssertEqual(valid.shadowDepth, 0)
         XCTAssertEqual(valid.shadowOpacity, 1)
+        XCTAssertEqual(valid.backgroundOpacity, 1)
     }
 
     func testLegacyAppearanceRetainsSettingsAndAddsTypographyDefaults() throws {
@@ -46,6 +53,9 @@ final class AppearanceTests: XCTestCase {
         var old = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(LyricAppearance())) as? [String: Any])
         old.removeValue(forKey: "lineSpacing")
         old.removeValue(forKey: "ayahNumberScale")
+        old.removeValue(forKey: "continuousText")
+        old.removeValue(forKey: "backgroundColor")
+        old.removeValue(forKey: "backgroundOpacity")
         old["panelWidth"] = 630
         old["shadowDepth"] = 9
         defaults.set(try JSONSerialization.data(withJSONObject: old), forKey: "lyricAppearance")
@@ -54,6 +64,9 @@ final class AppearanceTests: XCTestCase {
         XCTAssertEqual(restored.shadowDepth, 9)
         XCTAssertEqual(restored.lineSpacing, 6)
         XCTAssertEqual(restored.ayahNumberScale, 1)
+        XCTAssertFalse(restored.continuousText)
+        XCTAssertEqual(restored.backgroundOpacity, 0)
+        XCTAssertEqual(restored.backgroundColor, .black)
         var invalid = restored
         invalid.lineSpacing = 100
         invalid.ayahNumberScale = 0.1
@@ -68,8 +81,8 @@ final class AppearanceTests: XCTestCase {
                                  fontName: ArabicFonts.quranName, width: 280)
         let wide = PanelLayout(text: text, fontSize: 30, availableHeight: 900,
                                fontName: ArabicFonts.quranName, width: 800)
-        XCTAssertEqual(narrow.contentWidth, 224)
-        XCTAssertEqual(wide.contentWidth, 744)
+        XCTAssertEqual(narrow.contentWidth, 280)
+        XCTAssertEqual(wide.contentWidth, 800)
         XCTAssertGreaterThan(narrow.textHeight, wide.textHeight)
         XCTAssertEqual(narrow.viewportHeight, wide.viewportHeight)
     }

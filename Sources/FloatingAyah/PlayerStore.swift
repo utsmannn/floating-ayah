@@ -69,6 +69,23 @@ final class PlayerStore: ObservableObject {
               next.position.surah == position.surah else { return nil }
         return next
     }
+    /// Entire surah around the current entry for stable, mushaf-like continuous text.
+    var continuousContext: (before: [LyricSegment], after: [LyricSegment])? {
+        // Also during the surah pause, so the opening never reflows when its audio starts.
+        // Use display text: ayah 1 stores its basmalah inline, but it is shown separately.
+        let segments = surah.ayahs.enumerated().map {
+            LyricSegment(text: quran.text(at: AyahPosition(surah: position.surah, ayah: $0.offset)),
+                         number: $0.element.number)
+        }
+        if isBasmalah { return ([], segments) }
+        var before: [LyricSegment] = []
+        // The opening belongs to the surah, so look it up from ayah 1 rather than the current ayah.
+        if let opening = quran.basmalah(at: AyahPosition(surah: position.surah, ayah: 0)) {
+            before.append(LyricSegment(text: opening, number: nil))
+        }
+        before += segments[..<position.ayah]
+        return (before, Array(segments[(position.ayah + 1)...]))
+    }
     var previousAyahText: String? { previousEntry.map { quran.text(for: $0) } }
     var nextAyahText: String? { nextDisplayEntry.map { quran.text(for: $0) } }
     var previousAyahNumber: Int? {
@@ -146,12 +163,20 @@ final class PlayerStore: ObservableObject {
     }
 
     func togglePlayback() {
+        if isPlaying { pause() } else { play() }
+    }
+
+    func pause() {
         sample.stop()
-        if isPlaying {
-            player.pause()
-            isPlaying = false
-            isBuffering = false
-        } else if player.currentItem == nil || errorMessage != nil || finishedSurah {
+        player.pause()
+        isPlaying = false
+        isBuffering = false
+    }
+
+    func play() {
+        sample.stop()
+        guard !isPlaying else { return }
+        if player.currentItem == nil || errorMessage != nil || finishedSurah {
             rebuildQueue(play: true)
         } else if let local = localURL(for: currentEntry),
                   (player.currentItem?.asset as? AVURLAsset)?.url != local {

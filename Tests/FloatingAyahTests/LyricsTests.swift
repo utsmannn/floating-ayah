@@ -46,7 +46,7 @@ final class LyricsTests: XCTestCase {
                 }
             }
         }
-        XCTAssertEqual(compatible, 6233) // Three upstream token-count mismatches safely use manual scroll.
+        XCTAssertEqual(compatible, 6233) // Three upstream token-count mismatches safely omit word following.
     }
 
     func testLongAyahUsesCompactThreeLineViewport() throws {

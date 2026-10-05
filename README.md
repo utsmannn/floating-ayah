@@ -93,14 +93,21 @@ installed copy in `/Applications` is not replaced by this installer.
 | --- | --- |
 | Menu-bar book icon | Choose a surah, ayah, reciter, playback mode, or appearance settings; manage downloads; quit. |
 | Click the Arabic text | Play or pause. |
+| Keyboard/headset media play/pause | Control playback through macOS Now Playing when Floating Ayah is the active media app. |
 | Drag anywhere on the panel | Move the window without also triggering a click. |
-| Hover over the panel | Reveal playback controls without resizing the panel. |
-| Scroll wheel or trackpad | Manually scroll the text. |
+| Hover over the panel | Reveal information and playback controls over the ayahs without reserving extra space. |
+| Scroll wheel or trackpad | Manual scrolling is disabled; the lyrics follow the recitation automatically. |
 | Minus button | Hide the panel without stopping audio; reopen it from the menu bar. |
 | Play sample | Preview Al-Fatihah 1:2 for the selected reciter, pausing the main player. |
 
 Menus, errors, and accessibility descriptions are in English. Quran text and
 font previews remain Arabic.
+
+After playback starts, the current surah/ayah and reciter appear in macOS
+Now Playing. Keyboard media keys, compatible headset controls, and Control
+Center can play or pause without focusing the panel. macOS chooses the active
+media app; another player can take over these controls. No global keyboard
+capture or Accessibility permission is required.
 
 ### Playback modes
 
@@ -120,12 +127,17 @@ The panel defaults to **420 pt wide**, adjustable from **280–800 pt**, with a
 viewport of roughly three lines. Arabic wraps without shrinking the font.
 Appearance settings include font size (**22–42 pt**), additional line spacing
 (**0–24 pt**), ayah number scale (**60–120%**), text color, and shadow controls.
+Open **Ayah appearance** for **Font size** and **Continuous text**. Continuous text
+joins adjacent ayahs and basmalah with spaces instead of forced line breaks;
+normal wrapping and ayah markers remain intact. It is off by default and persists
+across launches.
 
 Amiri Quran is bundled and registered only for the app, not installed system-wide.
 Other Arabic font choices depend on fonts installed on your Mac. Ayah markers use
 Arabic-Indic numerals, such as ﴿٢٨٢﴾. Reduce Motion disables spatial scrolling
 animations and surah crossfades. The idle panel has no background; hovering reveals
-a translucent backing and controls.
+a translucent backing and controls over the faded top and bottom edges, without
+moving or resizing the text. Drag directly on the ayahs to move the window.
 
 ### Offline audio
 

@@ -34,10 +34,14 @@ struct LyricAppearance: Codable, Equatable {
     var panelWidth: Double = 420
     var lineSpacing: Double = 6
     var ayahNumberScale: Double = 1
+    var continuousText = false
+    var backgroundColor = LyricColor.black
+    var backgroundOpacity: Double = 0
 
     private enum CodingKeys: String, CodingKey {
         case textColor, shadowColor, shadowEnabled, shadowBlur, shadowDepth
-        case shadowOpacity, panelWidth, lineSpacing, ayahNumberScale
+        case shadowOpacity, panelWidth, lineSpacing, ayahNumberScale, continuousText
+        case backgroundColor, backgroundOpacity
     }
 
     init() {}
@@ -53,6 +57,9 @@ struct LyricAppearance: Codable, Equatable {
         panelWidth = try values.decodeIfPresent(Double.self, forKey: .panelWidth) ?? 420
         lineSpacing = try values.decodeIfPresent(Double.self, forKey: .lineSpacing) ?? 6
         ayahNumberScale = try values.decodeIfPresent(Double.self, forKey: .ayahNumberScale) ?? 1
+        continuousText = try values.decodeIfPresent(Bool.self, forKey: .continuousText) ?? false
+        backgroundColor = try values.decodeIfPresent(LyricColor.self, forKey: .backgroundColor) ?? .black
+        backgroundOpacity = try values.decodeIfPresent(Double.self, forKey: .backgroundOpacity) ?? 0
     }
 
     var shadow: NSShadow? {
@@ -73,6 +80,8 @@ struct LyricAppearance: Codable, Equatable {
         value.shadowDepth = value.shadowDepth.isFinite ? min(16, max(0, value.shadowDepth)) : 1
         value.shadowBlur = value.shadowBlur.isFinite ? min(20, max(0, value.shadowBlur)) : 4
         value.shadowOpacity = value.shadowOpacity.isFinite ? min(1, max(0, value.shadowOpacity)) : 0.9
+        value.backgroundOpacity = value.backgroundOpacity.isFinite ? min(1, max(0, value.backgroundOpacity)) : 0
+        value.backgroundColor = LyricColor(red: value.backgroundColor.red, green: value.backgroundColor.green, blue: value.backgroundColor.blue)
         value.textColor = LyricColor(red: value.textColor.red, green: value.textColor.green, blue: value.textColor.blue)
         value.shadowColor = LyricColor(red: value.shadowColor.red, green: value.shadowColor.green, blue: value.shadowColor.blue)
         return value
@@ -81,6 +90,11 @@ struct LyricAppearance: Codable, Equatable {
     func save(to defaults: UserDefaults) {
         if let data = try? JSONEncoder().encode(self) { defaults.set(data, forKey: "lyricAppearance") }
     }
+}
+
+struct LyricSegment: Equatable {
+    let text: String
+    let number: Int?
 }
 
 /// The source Arabic is kept verbatim; offsets account only for separators.
@@ -99,7 +113,9 @@ struct LyricsDocument: Equatable {
     }
 
     init(current: String, previous: String?, next: String?,
-         currentNumber: Int? = nil, previousNumber: Int? = nil, nextNumber: Int? = nil) {
+         currentNumber: Int? = nil, previousNumber: Int? = nil, nextNumber: Int? = nil,
+         continuousText: Bool = false) {
+        let separator = continuousText ? " " : "\n"
         var markers: [NSRange] = []
         func appendMarker(_ number: Int?, to content: inout String) -> NSRange? {
             guard let number else { return nil }
@@ -114,7 +130,7 @@ struct LyricsDocument: Equatable {
             previousRange = NSRange(location: 0, length: (previous as NSString).length)
             content = previous
             _ = appendMarker(previousNumber, to: &content)
-            content += "\n"
+            content += separator
         } else {
             previousRange = nil
         }
@@ -122,12 +138,53 @@ struct LyricsDocument: Equatable {
         content += current
         currentMarkerRange = appendMarker(currentNumber, to: &content)
         if let next {
-            content += "\n"
+            content += separator
             nextRange = NSRange(location: (content as NSString).length, length: (next as NSString).length)
             content += next
             _ = appendMarker(nextNumber, to: &content)
         } else {
             nextRange = nil
+        }
+        text = content
+        markerRanges = markers
+    }
+
+    /// Whole-surah document: its text never changes while reading, so line breaks stay fixed.
+    init(before: [LyricSegment], current: String, currentNumber: Int?, after: [LyricSegment]) {
+        var markers: [NSRange] = []
+        var content = ""
+        // The unnumbered opening basmalah is not part of the surah, so it keeps its own line.
+        // Al-Fatihah's basmalah is numbered ayah 1 and flows like any other ayah.
+        var afterOpening = false
+        func join() -> String { afterOpening ? "\n" : " " }
+        func append(_ segment: LyricSegment) {
+            afterOpening = segment.number == nil
+            content += segment.text
+            if let number = segment.number {
+                let marker = Self.ayahMarker(number)
+                markers.append(NSRange(location: (content as NSString).length, length: (marker as NSString).length))
+                content += marker
+            }
+        }
+        for (index, segment) in before.enumerated() {
+            if index > 0 { content += join() }
+            append(segment)
+        }
+        previousRange = before.isEmpty ? nil : NSRange(location: 0, length: (content as NSString).length)
+        if !content.isEmpty { content += join() }
+        currentRange = NSRange(location: (content as NSString).length, length: (current as NSString).length)
+        append(LyricSegment(text: current, number: currentNumber))
+        currentMarkerRange = currentNumber == nil ? nil : markers.last
+        if after.isEmpty {
+            nextRange = nil
+        } else {
+            content += join()
+            let start = (content as NSString).length
+            for (index, segment) in after.enumerated() {
+                if index > 0 { content += join() }
+                append(segment)
+            }
+            nextRange = NSRange(location: start, length: (content as NSString).length - start)
         }
         text = content
         markerRanges = markers

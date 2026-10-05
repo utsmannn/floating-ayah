@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Download, Volume2, VolumeX, Battery, Wifi, Terminal, Copy, Check } from "lucide-react";
+import { Volume2, VolumeX, Battery, Wifi, Terminal, Copy, Check } from "lucide-react";
 import { ClaudeCodeTerminal } from "./components/ClaudeCodeTerminal";
 import { FloatingAyahOverlay } from "./components/FloatingAyahOverlay";
 import { DesktopPreview } from "./components/DesktopPreview";
@@ -121,16 +121,6 @@ export const App: React.FC = () => {
             {isAudioMuted ? <VolumeX className="w-3.5 h-3.5 text-teal-400" /> : <Volume2 className="w-3.5 h-3.5 text-teal-400" />}
             <span>{isAudioMuted ? "Audio Muted" : "Playing Alafasy"}</span>
           </button>
-
-          <a
-            href="https://github.com/utsmannn/floating-ayah/releases/latest"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-white text-black hover:bg-[#eae9df] font-semibold text-xs transition-colors rounded-md cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Download for Mac</span>
-          </a>
 
           <a
             href="https://github.com/utsmannn/floating-ayah"

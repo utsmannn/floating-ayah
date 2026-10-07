@@ -12,12 +12,13 @@ struct PanelLayout {
     var needsScroll: Bool { textHeight + 12 > viewportHeight }
 
     init(text: String, fontSize: Double, availableHeight: CGFloat,
-         fontName: String = ArabicFonts.defaultName, width: Double = 420, spacing: Double = 6) {
+         fontName: String = ArabicFonts.defaultName, width: Double = 420, spacing: Double = 6,
+         lines: Int = LyricAppearance.defaultLines) {
         panelWidth = CGFloat(min(800, max(280, width)))
         textHeight = ArabicTypography.height(for: text, size: fontSize, width: panelWidth, fontName: fontName, spacing: spacing)
-        // Chrome overlays the faded edges; only the three lyric lines set height.
-        viewportHeight = min(ArabicTypography.lineHeight(size: fontSize, spacing: spacing) * 3,
-                             max(60, availableHeight))
+        // Chrome overlays the faded edges; only the lyric lines set height.
+        let rowHeight = ArabicTypography.lineHeight(size: fontSize, spacing: spacing)
+        viewportHeight = min(rowHeight * CGFloat(LyricAppearance.clampedLines(lines)), max(60, availableHeight))
     }
 }
 
@@ -43,16 +44,7 @@ struct PanelView: View {
                    readingRange: store.readingRange, reduceMotion: reduceMotion,
                    onClick: store.togglePlayback)
             .frame(width: layout.contentWidth, height: layout.viewportHeight)
-            .mask {
-                LinearGradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .black.opacity(0.65), location: 0.16),
-                    .init(color: .black, location: 0.3),
-                    .init(color: .black, location: 0.7),
-                    .init(color: .black.opacity(0.65), location: 0.84),
-                    .init(color: .clear, location: 1)
-                ], startPoint: .top, endPoint: .bottom)
-            }
+            .mask { edgeFade }
             .overlay(alignment: .top) {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
@@ -124,6 +116,21 @@ struct PanelView: View {
             }
             .help(store.errorMessage ?? "Click the ayah to play or pause. Drag anywhere to move the window.")
             .environment(\.locale, Locale(identifier: "en_US"))
+    }
+
+    /// Fades the first and last row. With one row there is nothing to fade into, and two rows
+    /// would lose their text, so the fade is shorter the fewer rows are shown.
+    private var edgeFade: some View {
+        let lines = LyricAppearance.clampedLines(store.appearance.visibleLines)
+        let edge: Double = lines <= 1 ? 0 : (lines == 2 ? 0.12 : min(0.3, 1.0 / Double(lines)))
+        return LinearGradient(stops: [
+            .init(color: .black.opacity(lines <= 1 ? 1 : 0), location: 0),
+            .init(color: .black.opacity(lines <= 2 ? 0.85 : 0.65), location: edge * 0.55),
+            .init(color: .black, location: edge),
+            .init(color: .black, location: 1 - edge),
+            .init(color: .black.opacity(lines <= 2 ? 0.85 : 0.65), location: 1 - edge * 0.55),
+            .init(color: .black.opacity(lines <= 1 ? 1 : 0), location: 1)
+        ], startPoint: .top, endPoint: .bottom)
     }
 
     private func control(_ image: String, label: String, action: @escaping () -> Void) -> some View {

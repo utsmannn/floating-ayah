@@ -345,6 +345,63 @@ final class PanelInteractionTests: XCTestCase {
         XCTAssertEqual(PanelLayout.chromeHeight, 0)
     }
 
+    func testVisibleLinesSetTheViewportHeightFromOneToTenRows() {
+        for size in [22.0, 30.0, 42.0] {
+            let row = ArabicTypography.lineHeight(size: size)
+            for lines in 1...10 {
+                let layout = PanelLayout(text: "بِسْمِ ٱللَّهِ", fontSize: size, availableHeight: 5000, lines: lines)
+                XCTAssertEqual(layout.viewportHeight, row * CGFloat(lines), accuracy: 0.01, "size \(size) lines \(lines)")
+                XCTAssertEqual(layout.height, layout.viewportHeight)
+            }
+        }
+        // Out-of-range counts are clamped, so a bad value can never make a zero or giant panel.
+        let row = ArabicTypography.lineHeight(size: 30)
+        XCTAssertEqual(PanelLayout(text: "x", fontSize: 30, availableHeight: 5000, lines: 0).viewportHeight, row, accuracy: 0.01)
+        XCTAssertEqual(PanelLayout(text: "x", fontSize: 30, availableHeight: 5000, lines: 99).viewportHeight, row * 10, accuracy: 0.01)
+        // The default is unchanged from before this setting existed.
+        XCTAssertEqual(PanelLayout(text: "x", fontSize: 30, availableHeight: 5000).viewportHeight, row * 3, accuracy: 0.01)
+        // A small screen caps the panel instead of letting it run off the display.
+        XCTAssertEqual(PanelLayout(text: "x", fontSize: 42, availableHeight: 300, lines: 10).viewportHeight, 300, accuracy: 0.01)
+    }
+
+    func testVisibleLinesPersistAndOldOrBrokenSettingsAreRepaired() throws {
+        let suite = "FloatingAyahLines.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertEqual(LyricAppearance().visibleLines, 3)
+        var appearance = LyricAppearance()
+        appearance.visibleLines = 7
+        appearance.save(to: defaults)
+        XCTAssertEqual(LyricAppearance.load(from: defaults).visibleLines, 7)
+        var old = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(LyricAppearance())) as? [String: Any])
+        old.removeValue(forKey: "visibleLines")
+        defaults.set(try JSONSerialization.data(withJSONObject: old), forKey: "lyricAppearance")
+        XCTAssertEqual(LyricAppearance.load(from: defaults).visibleLines, 3, "settings saved before this feature keep three lines")
+        for (stored, expected) in [(0, 1), (-4, 1), (11, 10), (500, 10)] {
+            old["visibleLines"] = stored
+            defaults.set(try JSONSerialization.data(withJSONObject: old), forKey: "lyricAppearance")
+            XCTAssertEqual(LyricAppearance.load(from: defaults).visibleLines, expected, "stored \(stored)")
+        }
+    }
+
+    @MainActor
+    func testPanelWindowResizesWhenTheLineCountChanges() throws {
+        let suite = "FloatingAyahResize.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = PlayerStore(quran: try Quran.load(), defaults: defaults)
+        let controller = PanelController(store: store)
+        let row = ArabicTypography.lineHeight(size: store.fontSize, spacing: store.appearance.lineSpacing)
+        XCTAssertEqual(controller.panel.frame.height, row * 3, accuracy: 1)
+        for lines in [1, 5, 10, 2] {
+            store.appearance.visibleLines = lines
+            let expectation = XCTestExpectation(description: "resized to \(lines)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { expectation.fulfill() }
+            wait(for: [expectation], timeout: 2)
+            XCTAssertEqual(controller.panel.frame.height, row * CGFloat(lines), accuracy: 1, "\(lines) lines")
+        }
+    }
+
     @MainActor
     func testHostingContainsClickableTextAndAncestorDragRecognizer() throws {
         let suite = "FloatingAyahPanel.\(UUID().uuidString)"

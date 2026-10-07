@@ -37,12 +37,18 @@ struct LyricAppearance: Codable, Equatable {
     var continuousText = false
     var backgroundColor = LyricColor.black
     var backgroundOpacity: Double = 0
+    var visibleLines = LyricAppearance.defaultLines
 
     private enum CodingKeys: String, CodingKey {
         case textColor, shadowColor, shadowEnabled, shadowBlur, shadowDepth
         case shadowOpacity, panelWidth, lineSpacing, ayahNumberScale, continuousText
-        case backgroundColor, backgroundOpacity
+        case backgroundColor, backgroundOpacity, visibleLines
     }
+
+    static let minLines = 1
+    static let maxLines = 10
+    static let defaultLines = 3
+    static func clampedLines(_ value: Int) -> Int { min(maxLines, max(minLines, value)) }
 
     init() {}
 
@@ -60,6 +66,7 @@ struct LyricAppearance: Codable, Equatable {
         continuousText = try values.decodeIfPresent(Bool.self, forKey: .continuousText) ?? false
         backgroundColor = try values.decodeIfPresent(LyricColor.self, forKey: .backgroundColor) ?? .black
         backgroundOpacity = try values.decodeIfPresent(Double.self, forKey: .backgroundOpacity) ?? 0
+        visibleLines = try values.decodeIfPresent(Int.self, forKey: .visibleLines) ?? Self.defaultLines
     }
 
     var shadow: NSShadow? {
@@ -81,6 +88,7 @@ struct LyricAppearance: Codable, Equatable {
         value.shadowBlur = value.shadowBlur.isFinite ? min(20, max(0, value.shadowBlur)) : 4
         value.shadowOpacity = value.shadowOpacity.isFinite ? min(1, max(0, value.shadowOpacity)) : 0.9
         value.backgroundOpacity = value.backgroundOpacity.isFinite ? min(1, max(0, value.backgroundOpacity)) : 0
+        value.visibleLines = Self.clampedLines(value.visibleLines)
         value.backgroundColor = LyricColor(red: value.backgroundColor.red, green: value.backgroundColor.green, blue: value.backgroundColor.blue)
         value.textColor = LyricColor(red: value.textColor.red, green: value.textColor.green, blue: value.textColor.blue)
         value.shadowColor = LyricColor(red: value.shadowColor.red, green: value.shadowColor.green, blue: value.shadowColor.blue)

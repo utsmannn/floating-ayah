@@ -35,6 +35,10 @@ struct AppearanceSettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 FontPicker(selection: $store.fontName)
                 setting("Font size", value: $store.fontSize, range: 22...42, unit: "pt")
+                Stepper(value: $store.appearance.visibleLines, in: LyricAppearance.minLines...LyricAppearance.maxLines) {
+                    Text("Lines shown: \(store.appearance.visibleLines)").monospacedDigit()
+                }
+                .accessibilityLabel("Lines shown")
                 Toggle("Continuous text", isOn: $store.appearance.continuousText)
                     .toggleStyle(.checkbox)
                     .help("Let adjacent ayahs and basmalah flow together without forced line breaks")

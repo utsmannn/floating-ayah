@@ -82,7 +82,8 @@ final class PanelController: NSObject, ObservableObject, NSWindowDelegate {
         let layout = PanelLayout(text: store.displayText, fontSize: store.fontSize,
                                  availableHeight: screen.height - 24, fontName: store.fontName,
                                  width: min(store.appearance.panelWidth, screen.width - 24),
-                                 spacing: store.appearance.lineSpacing)
+                                 spacing: store.appearance.lineSpacing,
+                                 lines: store.appearance.visibleLines)
         let top = min(panel.frame.maxY, screen.maxY - 12)
         let originX = min(max(panel.frame.minX, screen.minX + 12), screen.maxX - layout.panelWidth - 12)
         let originY = max(screen.minY + 12, top - layout.height)

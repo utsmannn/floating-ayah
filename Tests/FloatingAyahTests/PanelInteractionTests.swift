@@ -277,7 +277,6 @@ final class PanelInteractionTests: XCTestCase {
 
     func testUnderlineSitsAtTheBottomOfTheWordBox() throws {
         let (scroll, _) = makeLyrics()
-        scroll.reduceMotion = true
         scroll.readingRange = TimedAyah.wordRanges(in: scroll.text).first
         scroll.updateText()
         let word = scroll.wordLayer
@@ -432,7 +431,6 @@ final class PanelInteractionTests: XCTestCase {
         view.textContainer?.heightTracksTextView = false
         scroll.documentView = view
         scroll.text = Array(repeating: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ", count: 30).joined(separator: " ")
-        scroll.reduceMotion = true
         return (scroll, view)
     }
 }

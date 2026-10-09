@@ -77,7 +77,6 @@ final class TypographyTests: XCTestCase {
         scroll.currentNumber = 2
         scroll.previousText = "بِسْمِ"
         scroll.previousNumber = 1
-        scroll.reduceMotion = true
         scroll.readingRange = TimedAyah.wordRanges(in: scroll.text).last
         scroll.updateText()
         let document = try XCTUnwrap(scroll.renderedDocument)

@@ -9,7 +9,6 @@ final class SurahTransitionTests: XCTestCase {
         view.textContainer?.lineFragmentPadding = 0
         view.textContainer?.heightTracksTextView = false
         scroll.documentView = view
-        scroll.reduceMotion = true
         scroll.surahIndex = 0
         scroll.text = "صِرَٰطَ ٱلَّذِينَ"
         scroll.previousText = "ٱهْدِنَا"

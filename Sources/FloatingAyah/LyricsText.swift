@@ -18,7 +18,6 @@ struct LyricsText: NSViewRepresentable {
     let fontName: String
     let appearance: LyricAppearance
     let readingRange: NSRange?
-    let reduceMotion: Bool
     let onClick: () -> Void
 
     func makeNSView(context: Context) -> LyricsScrollView {
@@ -61,11 +60,9 @@ struct LyricsText: NSViewRepresentable {
         scroll.fontName = fontName
         scroll.lyricAppearance = appearance
         scroll.readingRange = readingRange
-        scroll.reduceMotion = reduceMotion
         scroll.updateText()
     }
 
-    static func dismantleNSView(_ scroll: LyricsScrollView, coordinator: ()) { scroll.stopAnimation() }
 }
 
 /// One continuous TextKit document prevents a hard boundary between ayahs.
@@ -88,7 +85,6 @@ final class LyricsScrollView: NSScrollView {
     var fontName = ArabicFonts.defaultName
     var lyricAppearance = LyricAppearance()
     var readingRange: NSRange?
-    var reduceMotion = false
     var onClick: (() -> Void)?
     private(set) var renderedDocument: LyricsDocument?
     private var renderedSize: Double = 0
@@ -104,11 +100,6 @@ final class LyricsScrollView: NSScrollView {
     private let lineLayer = CALayer()
     let wordLayer = CALayer()
     let underlineLayer = CALayer()
-    private var scrollTimer: Timer?
-    private var animationStart: CFTimeInterval = 0
-    private var animationFrom: CGFloat = 0
-    private var animationTarget: CGFloat = 0
-    private let animationDuration: Double = 0.45
     private var updating = false
 
     override func layout() {
@@ -137,22 +128,12 @@ final class LyricsScrollView: NSScrollView {
             (renderedSurahIndex != surahIndex || (isOpeningPause && !renderedOpeningPause))
         renderedSurahIndex = surahIndex
         renderedOpeningPause = isOpeningPause
-        if sectionChanged, !reduceMotion, window != nil {
-            // Fade out the old lyric surface as the clean opening replaces it.
-            // Rendering remains inside this view; no desktop capture is used.
-            let fade = CATransition()
-            fade.type = .fade
-            fade.duration = 0.3
-            fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            layer?.add(fade, forKey: "surah-change")
-        }
         let documentChanged = renderedDocument != document
         let styleChanged = renderedSize != fontSize || renderedFont != fontName || renderedAppearance != lyricAppearance
         if documentChanged || styleChanged {
             let oldDocument = renderedDocument
             let oldOffset = contentView.bounds.minY
             let oldCurrentY = oldDocument.flatMap { lineRect(for: $0.currentRange)?.minY }
-            stopAnimation()
             renderedDocument = document
             renderedSize = fontSize
             renderedFont = fontName
@@ -213,7 +194,6 @@ final class LyricsScrollView: NSScrollView {
         followReading()
         if sectionChanged {
             // No scrolling through the previous surah during the crossfade.
-            stopAnimation()
             if let view = documentView as? NSTextView, let line = lineRect(for: document.currentRange) {
                 setScroll(line.midY + view.textContainerInset.height - contentSize.height / 2)
             }
@@ -253,17 +233,11 @@ final class LyricsScrollView: NSScrollView {
               let line = lineRect(for: document.absoluteReadingRange(readingRange) ?? document.currentRange) else { return }
         updateHighlight(document: document, manager: manager)
         guard lastLineY != line.minY else {
-            if reduceMotion, scrollTimer != nil { stopAnimation(); setScroll(animationTarget) }
             return
         }
         lastLineY = line.minY
         let target = boundedOffset(line.midY + view.textContainerInset.height - contentSize.height / 2)
-        if reduceMotion || window == nil {
-            stopAnimation()
-            setScroll(target)
-        } else {
-            animateScroll(to: target)
-        }
+        setScroll(target)
     }
 
     private func updateHighlight(document: LyricsDocument, manager: NSLayoutManager) {
@@ -276,7 +250,7 @@ final class LyricsScrollView: NSScrollView {
             if highlightedLine != nil {
                 manager.removeTemporaryAttribute(.foregroundColor, forCharacterRange: document.currentRange)
                 highlightedLine = nil
-                refreshMarkers(animated: false)
+                refreshMarkers()
             }
             syncWordPointer(activeRange, manager: manager)
             return
@@ -289,20 +263,12 @@ final class LyricsScrollView: NSScrollView {
             syncWordPointer(activeRange, manager: manager)
             return
         }
-        if highlightedLine != nil, !reduceMotion, window != nil {
-            // Crossfade the ayah/line brightness; attributes alone cannot be interpolated.
-            let fade = CATransition()
-            fade.type = .fade
-            fade.duration = 0.28
-            fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            documentView?.layer?.add(fade, forKey: "line-change")
-        }
         highlightedLine = characterRange
         manager.addTemporaryAttribute(.foregroundColor,
                                       value: lyricAppearance.textColor.nsColor.withAlphaComponent(0.55),
                                       forCharacterRange: document.currentRange)
         manager.addTemporaryAttribute(.foregroundColor, value: lyricAppearance.textColor.nsColor, forCharacterRange: characterRange)
-        refreshMarkers(animated: true)
+        refreshMarkers()
         syncWordPointer(activeRange, manager: manager)
     }
 
@@ -315,13 +281,13 @@ final class LyricsScrollView: NSScrollView {
 
     private func clearWordPointer(manager: NSLayoutManager?) {
         highlightedWord = nil
-        refreshMarkers(animated: false)
+        refreshMarkers()
     }
 
     private func updateWordPointer(_ range: NSRange?, manager: NSLayoutManager) {
         guard highlightedWord != range else { return }
         highlightedWord = range
-        refreshMarkers(animated: true)
+        refreshMarkers()
     }
 
     // MARK: Animated highlight layers
@@ -357,13 +323,10 @@ final class LyricsScrollView: NSScrollView {
         return first.map { $0.offsetBy(dx: view.textContainerOrigin.x, dy: view.textContainerOrigin.y) }
     }
 
-    private func place(_ layer: CALayer, frame: NSRect?, animated: Bool) {
-        let visible = layer.opacity > 0
-        let duration = animated && !reduceMotion && window != nil && visible ? 0.24 : 0
+    private func place(_ layer: CALayer, frame: NSRect?) {
+        // Highlight changes are instant. Layer animations were costly and glitched after a repeat.
         CATransaction.begin()
-        CATransaction.setAnimationDuration(duration)
-        CATransaction.setAnimationTimingFunction(CAMediaTimingFunction(name: .easeInEaseOut))
-        if duration == 0 { CATransaction.setDisableActions(true) }
+        CATransaction.setDisableActions(true)
         if let frame {
             layer.frame = frame
             layer.opacity = 1
@@ -373,7 +336,7 @@ final class LyricsScrollView: NSScrollView {
         CATransaction.commit()
     }
 
-    private func refreshMarkers(animated: Bool) {
+    private func refreshMarkers() {
         guard installLayers() != nil, let view = documentView as? NSTextView,
               let manager = view.layoutManager else { return }
         let text = lyricAppearance.textColor.nsColor
@@ -382,7 +345,7 @@ final class LyricsScrollView: NSScrollView {
         lineLayer.backgroundColor = lyricAppearance.backgroundColor.nsColor
             .withAlphaComponent(lyricAppearance.backgroundOpacity).cgColor
         wordMarkerFrame = highlightedWord.flatMap { firstLineRect(for: $0) }
-        place(wordLayer, frame: wordMarkerFrame, animated: animated)
+        place(wordLayer, frame: wordMarkerFrame)
         // The clip view's layer is flipped, which flips this sublayer's own coordinates too.
         let thickness: CGFloat = 2
         let height = wordMarkerFrame?.height ?? 0
@@ -396,7 +359,7 @@ final class LyricsScrollView: NSScrollView {
                 .offsetBy(dx: view.textContainerOrigin.x, dy: view.textContainerOrigin.y)
         }
         lineBackgroundFrame = lineFrame
-        place(lineLayer, frame: lineFrame, animated: animated)
+        place(lineLayer, frame: lineFrame)
     }
 
     private func boundedOffset(_ offset: CGFloat) -> CGFloat {
@@ -408,35 +371,9 @@ final class LyricsScrollView: NSScrollView {
         reflectScrolledClipView(contentView)
     }
 
-    private func animateScroll(to target: CGFloat) {
-        // Re-target from the current presentation position, never a queued animator.
-        stopAnimation()
-        animationFrom = contentView.bounds.minY
-        animationTarget = target
-        guard abs(animationFrom - target) > 0.5 else { setScroll(target); return }
-        animationStart = CACurrentMediaTime()
-        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.animationTick() }
-        scrollTimer = timer
-        RunLoop.main.add(timer, forMode: .common)
-    }
-
-    private func animationTick() {
-        let progress = min(1, (CACurrentMediaTime() - animationStart) / animationDuration)
-        // Smoothstep: zero velocity at both ends, with no overshoot.
-        let eased = progress * progress * (3 - 2 * progress)
-        setScroll(animationFrom + (animationTarget - animationFrom) * eased)
-        if progress >= 1 { stopAnimation() }
-    }
-
     override func scrollWheel(with event: NSEvent) {
         // Ignore manual scrolling without interrupting the recitation follower.
         // Mouse dragging remains handled by WindowDrag on the hosting ancestor.
     }
 
-    func stopAnimation() {
-        scrollTimer?.invalidate()
-        scrollTimer = nil
-    }
-
-    deinit { scrollTimer?.invalidate() }
 }

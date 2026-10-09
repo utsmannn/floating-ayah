@@ -67,7 +67,6 @@ final class LyricsTests: XCTestCase {
         view.textContainer?.heightTracksTextView = false
         scroll.documentView = view
         scroll.text = text
-        scroll.reduceMotion = true
         scroll.updateText()
         let initialOffset = scroll.contentView.bounds.minY
         scroll.readingRange = TimedAyah.wordRanges(in: text).last

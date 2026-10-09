@@ -41,7 +41,7 @@ struct PanelView: View {
                    surahAfter: store.appearance.continuousText ? store.continuousContext?.after : nil,
                    isPlaying: store.isPlaying,
                    fontSize: store.fontSize, fontName: store.fontName, appearance: store.appearance,
-                   readingRange: store.readingRange, reduceMotion: reduceMotion,
+                   readingRange: store.readingRange,
                    onClick: store.togglePlayback)
             .frame(width: layout.contentWidth, height: layout.viewportHeight)
             .mask { edgeFade }

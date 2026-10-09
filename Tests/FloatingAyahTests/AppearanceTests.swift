@@ -111,7 +111,6 @@ final class AppearanceTests: XCTestCase {
         scroll.text = "ٱلْحَمْدُ لِلَّهِ"
         scroll.previousText = "بِسْمِ ٱللَّهِ"
         scroll.nextText = "ٱلرَّحْمَٰنِ"
-        scroll.reduceMotion = true
         scroll.lyricAppearance.shadowEnabled = false
         scroll.updateText()
         let document = try XCTUnwrap(scroll.renderedDocument)

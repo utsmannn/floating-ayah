@@ -91,6 +91,18 @@ final class LyricsScrollView: NSScrollView {
     var reduceMotion = false
     var onClick: (() -> Void)?
     private(set) var renderedDocument: LyricsDocument?
+    private var renderedInput: DocumentInput?
+    private struct DocumentInput: Equatable {
+        let text: String
+        let previousText: String?
+        let nextText: String?
+        let currentNumber: Int?
+        let previousNumber: Int?
+        let nextNumber: Int?
+        let surahBefore: [LyricSegment]?
+        let surahAfter: [LyricSegment]?
+        let continuousText: Bool
+    }
     private var renderedSize: Double = 0
     private var renderedFont = ""
     private var renderedAppearance: LyricAppearance?
@@ -125,14 +137,23 @@ final class LyricsScrollView: NSScrollView {
         updating = true
         defer { updating = false }
         view.wantsLayer = true
+        // Most updates only move the reading word. Reuse the document instead of rebuilding and
+        // comparing a whole surah's text on each one.
+        let input = DocumentInput(text: text, previousText: previousText, nextText: nextText,
+                                  currentNumber: currentNumber, previousNumber: previousNumber, nextNumber: nextNumber,
+                                  surahBefore: surahBefore, surahAfter: surahAfter,
+                                  continuousText: lyricAppearance.continuousText)
         let document: LyricsDocument
-        if lyricAppearance.continuousText, let before = surahBefore, let after = surahAfter {
+        if let renderedDocument, renderedInput == input {
+            document = renderedDocument
+        } else if lyricAppearance.continuousText, let before = surahBefore, let after = surahAfter {
             document = LyricsDocument(before: before, current: text, currentNumber: currentNumber, after: after)
         } else {
             document = LyricsDocument(current: text, previous: previousText, next: nextText,
                                       currentNumber: currentNumber, previousNumber: previousNumber, nextNumber: nextNumber,
                                       continuousText: lyricAppearance.continuousText)
         }
+        renderedInput = input
         let sectionChanged = renderedSurahIndex != nil &&
             (renderedSurahIndex != surahIndex || (isOpeningPause && !renderedOpeningPause))
         renderedSurahIndex = surahIndex

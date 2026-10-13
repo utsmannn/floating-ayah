@@ -14,8 +14,16 @@ final class PlayerStore: ObservableObject {
     @Published private(set) var isPlaying = false
     @Published private(set) var isBuffering = false
     @Published private(set) var errorMessage: String?
-    @Published var elapsed: Double = 0
-    @Published private(set) var duration: Double = 0
+    /// Set every 0.08 s while playing, so it is not published: that would redraw the whole panel
+    /// each tick. Views only depend on whether it is past the restart threshold.
+    var elapsed: Double = 0 {
+        didSet {
+            let past = elapsed > Self.restartThreshold
+            if past != isPastRestartThreshold { isPastRestartThreshold = past }
+        }
+    }
+    @Published private(set) var isPastRestartThreshold = false
+    private(set) var duration: Double = 0
     @Published private(set) var readingRange: NSRange?
     private var wordTimings: WordTimings?
     @Published var playbackMode: PlaybackMode {
@@ -71,6 +79,17 @@ final class PlayerStore: ObservableObject {
     }
     /// Entire surah around the current entry for stable, mushaf-like continuous text.
     var continuousContext: (before: [LyricSegment], after: [LyricSegment])? {
+        // The panel reads this on every word change; rebuilding a long surah each time is wasteful.
+        // Returning the same arrays also lets the lyric view's equality checks short-circuit.
+        let key = ContextKey(surah: position.surah, ayah: position.ayah, isBasmalah: isBasmalah)
+        if let cached = cachedContext, cached.key == key { return cached.value }
+        let value = buildContinuousContext()
+        cachedContext = (key, value)
+        return value
+    }
+    private struct ContextKey: Equatable { let surah: Int, ayah: Int, isBasmalah: Bool }
+    private var cachedContext: (key: ContextKey, value: (before: [LyricSegment], after: [LyricSegment]))?
+    private func buildContinuousContext() -> (before: [LyricSegment], after: [LyricSegment]) {
         // Also during the surah pause, so the opening never reflows when its audio starts.
         // Use display text: ayah 1 stores its basmalah inline, but it is shown separately.
         let segments = surah.ayahs.enumerated().map {

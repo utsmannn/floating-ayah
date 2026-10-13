@@ -86,3 +86,24 @@ def romanize(word: str) -> str:
         # Wasla, sukun, maddah and Quranic pause marks are not pronounced on their own.
     out = re.sub(r"[^a-z']", "", out)
     return out or "a"
+
+
+def episode_priority(title: str) -> int:
+    """Clean per-surah recordings first, then loose surahs, then taraweeh (2020 before older)."""
+    if re.match(r"^\d{3} ", title):
+        return 0
+    if "Ramadan" in title or "Juz" in title:
+        return 2 if "2020" in title else 3
+    return 1
+
+
+SPOKEN_LETTERS = {"ا": "الف", "ل": "لام", "م": "ميم", "ص": "صاد", "ر": "را", "ك": "كاف", "ه": "ها", "ي": "يا",
+                  "ع": "عين", "ط": "طا", "س": "سين", "ح": "حا", "ق": "قاف", "ن": "نون"}
+
+
+def spoken(word: str) -> str:
+    """The word as a transcript would write it: disjoined letters become their names (عين سين قاف)."""
+    letters = [ch for ch in word if not DIACRITICS.match(ch)]
+    if "\u0653" in word and letters and all(ch in SPOKEN_LETTERS for ch in letters):
+        return " ".join(SPOKEN_LETTERS[ch] for ch in letters)
+    return word

@@ -24,5 +24,7 @@ exist, so an interrupted run resumes. Delete a step's folder to redo it after ch
 | `align.py` | `align/` | MMS CTC forced alignment of each located ayah's exact words. |
 | `export.py` | the app's offline folder | Picks the best recording per ayah, re-transcribes the cut clip to verify it, and writes `SSS/SSSAAA.mp3`, `timings.json` and `manifest.json`. |
 
-`manifest.json` records where each ayah came from and which ayahs failed verification.
+`manifest.json` records where each ayah came from and which ayahs failed verification. Its
+`verified` value is the transcript similarity; `0` marks an ayah accepted because both
+neighbouring ayahs from the same recording were verified.
 Word indices follow the app's tokenization (`quran_text.py` mirrors `TimedAyah.wordRanges`).

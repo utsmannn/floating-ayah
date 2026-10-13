@@ -73,7 +73,9 @@ def candidates(seg, keys, index):
             continue
         for p in positions:
             votes[p - j] += 1
-    need = 1 if len(seg) <= 3 else 2
+    # One shared word pair is enough to try a location; local_align then has to confirm it. A short
+    # segment with a single misheard word (سبح اسم رمك الأعلى) has no second pair to offer.
+    need = 1
     found = []
     for start, count in sorted(votes.items(), key=lambda kv: -kv[1])[:15]:
         if count < need:
@@ -115,6 +117,37 @@ def chain(segments):
         path.append(states[k])
         k = back[k]
     return path[::-1]
+
+
+EDGE = 25.0  # Seconds searched beyond a run for its unmatched neighbouring ayahs.
+
+
+def extend_edges(runs, ayahs):
+    """Add up to two ayahs of the same surah before and after each run. Edges are where the ASR
+    most often fails: ayah 1 right after the basmalah, disjoined letters (كاف ها يا عين صاد),
+    and the last ayah of a recording. They get the unmatched time beside the run as their window,
+    and the aligner and the export verification decide whether they are really there."""
+    index = {(a.surah, a.ayah): i for i, a in enumerate(ayahs)}
+    taken = {(a[0], a[1]) for run in runs for a in run["ayahs"]}
+    for run in runs:
+        before, after, start, end = run["bounds"]
+        first, last = run["ayahs"][0], run["ayahs"][-1]
+        head = []
+        i = index[(first[0], first[1])]
+        for _ in range(2):
+            i -= 1
+            if i < 0 or ayahs[i].surah != first[0] or (ayahs[i].surah, ayahs[i].ayah) in taken:
+                break
+            head.insert(0, [ayahs[i].surah, ayahs[i].ayah, round(max(before, start - EDGE, 0.0), 2), first[2]])
+        i = index[(last[0], last[1])]
+        tail = []
+        for _ in range(2):
+            i += 1
+            if i >= len(ayahs) or ayahs[i].surah != last[0] or (ayahs[i].surah, ayahs[i].ayah) in taken:
+                break
+            tail.append([ayahs[i].surah, ayahs[i].ayah, last[3], round(min(after, end + EDGE), 2)])
+        taken |= {(a[0], a[1]) for a in head + tail}
+        run["ayahs"] = head + run["ayahs"] + tail
 
 
 def interpolate(points, word):
@@ -159,7 +192,9 @@ def main(work: Path) -> None:
         if current:
             runs.append(current)
         result = []
-        for run in runs:
+        bounds = [(run[0][0]["start"], run[-1][0]["end"]) for run in runs]
+        file_end = (asr["segments"][-1]["end"] + 10) if asr["segments"] else 0
+        for r, run in enumerate(runs):
             points = []
             for seg, qs, qe in run:
                 points += [(qs, seg["start"]), (qe + 1, seg["end"])]
@@ -184,7 +219,12 @@ def main(work: Path) -> None:
                     covered.append([ayahs[i].surah, ayahs[i].ayah,
                                     round(time_at(ws, "start"), 2), round(time_at(we, "end"), 2)])
             if covered:
-                result.append({"ayahs": covered})
+                result.append({"ayahs": covered, "bounds": (0.0 if r == 0 else bounds[r - 1][1],
+                                                            bounds[r + 1][0] if r + 1 < len(runs) else file_end,
+                                                            *bounds[r])})
+        extend_edges(result, ayahs)
+        for run in result:
+            run.pop("bounds")
         target.write_text(json.dumps({"id": asr["id"], "title": asr["title"], "runs": result}))
         summary = ", ".join(f"{r['ayahs'][0][0]}:{r['ayahs'][0][1]}-{r['ayahs'][-1][0]}:{r['ayahs'][-1][1]}"
                             for r in result)

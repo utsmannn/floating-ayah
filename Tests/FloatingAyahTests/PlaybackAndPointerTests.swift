@@ -70,6 +70,7 @@ final class PlaybackAndPointerTests: XCTestCase {
         scroll.documentView = view
         scroll.text = "بِسْمِ ٱللَّهِ"
         scroll.previousText = "ٱلْحَمْدُ"
+        scroll.reduceMotion = true
         let words = TimedAyah.wordRanges(in: scroll.text)
         scroll.readingRange = words[0]
         scroll.updateText()

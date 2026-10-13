@@ -4,11 +4,15 @@ import SwiftUI
 struct MenuView: View {
     @ObservedObject var store: PlayerStore
     @ObservedObject var panel: PanelController
+    @ObservedObject var updates: UpdateChecker
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
+                if case .available(let version, _) = updates.state {
+                    updateBanner(version)
+                }
                 nowPlaying
                 section("Go to") {
                     SurahPicker(store: store, onSelect: panel.show)
@@ -89,6 +93,32 @@ struct MenuView: View {
         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
 
+    private func updateBanner(_ version: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Version \(version) is available").font(.system(size: 12, weight: .semibold))
+                if let current = updates.currentVersion {
+                    Text("You have \(current)").font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 4)
+            Button("Download", action: updates.openReleasePage)
+        }
+        .padding(12)
+        .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var updateStatus: String {
+        switch updates.state {
+        case .idle: return ""
+        case .checking: return "Checking for updates…"
+        case .upToDate: return "Up to date"
+        case .available(let version, _): return "\(version) available"
+        case .failed: return "Couldn't check for updates"
+        }
+    }
+
     private func transport(_ icon: String, _ label: String, enabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).frame(width: 24, height: 24) }
             .buttonStyle(.borderless)
@@ -116,6 +146,17 @@ struct MenuView: View {
                 .foregroundStyle(.secondary)
                 Spacer(minLength: 4)
                 Button("Quit") { NSApplication.shared.terminate(nil) }.buttonStyle(.borderless)
+            }
+            if let version = updates.currentVersion {
+                HStack {
+                    Text(updateStatus.isEmpty ? "Version \(version)" : "Version \(version) · \(updateStatus)")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Button("Check for Updates") { Task { await updates.check() } }
+                        .buttonStyle(.borderless)
+                        .disabled(updates.state == .checking)
+                }
             }
         }
     }

@@ -18,6 +18,9 @@ struct MenuView: View {
                     SurahPicker(store: store, onSelect: panel.show)
                     AyahInput(store: store, onSelect: panel.show)
                 }
+                section("Repeat ayahs") {
+                    RepeatRangeView(store: store, onStart: panel.show)
+                }
                 section("Reciter") {
                     ReciterView(store: store, offline: store.offline, sample: store.sample)
                 }
@@ -80,14 +83,14 @@ struct MenuView: View {
                 transport("forward.fill", "Next surah", enabled: store.canGoNextSurah, action: store.nextSurah)
             }
             Picker("Playback mode", selection: $store.playbackMode) {
-                ForEach(PlaybackMode.allCases) { mode in
+                ForEach(PlaybackMode.basic) { mode in
                     Image(systemName: mode.symbol).help(mode.title).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .accessibilityLabel("Playback mode")
-            Text(store.playbackMode.title).font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(store.playbackModeTitle).font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(14)

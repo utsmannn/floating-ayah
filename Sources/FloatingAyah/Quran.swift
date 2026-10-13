@@ -122,15 +122,17 @@ struct Quran {
         PlaybackEntry(position: position, isBasmalah: basmalah(at: position) != nil)
     }
 
-    func nextEntry(after entry: PlaybackEntry, mode: PlaybackMode) -> PlaybackEntry? {
+    func nextEntry(after entry: PlaybackEntry, mode: PlaybackMode, range: AyahRange? = nil) -> PlaybackEntry? {
         if entry.isSurahPause {
             return PlaybackEntry(position: entry.position, isBasmalah: entry.isBasmalah)
         }
         // Even repeat-one must play the opening once, then repeat ayah 1 only.
         if entry.isBasmalah { return PlaybackEntry(position: entry.position, isBasmalah: false) }
-        guard let next = mode.next(in: self, after: entry.position) else { return nil }
+        guard let next = mode.next(in: self, after: entry.position, range: range) else { return nil }
+        // A range that starts at ayah 1 likewise loops back to the ayah, not to the opening.
+        let loopsRange = mode == .repeatRange && next.surah == entry.position.surah
         let opening = openingEntry(at: next)
-        return PlaybackEntry(position: next, isBasmalah: opening.isBasmalah,
+        return PlaybackEntry(position: next, isBasmalah: opening.isBasmalah && !loopsRange,
                              isSurahPause: next.surah != entry.position.surah ||
                                 (mode == .repeatSurah && self.next(after: entry.position) == nil))
     }

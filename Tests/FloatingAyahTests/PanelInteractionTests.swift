@@ -200,12 +200,12 @@ final class PanelInteractionTests: XCTestCase {
         let quran = try Quran.load()
         let store = PlayerStore(quran: quran, defaults: defaults)
         var seen: [PlaybackMode] = [store.playbackMode]
-        for _ in PlaybackMode.allCases.indices {
+        for _ in PlaybackMode.basic.indices {
             store.cyclePlaybackMode()
             seen.append(store.playbackMode)
         }
         XCTAssertEqual(seen.first, seen.last)
-        XCTAssertEqual(Set(seen.dropLast()), Set(PlaybackMode.allCases))
+        XCTAssertEqual(Set(seen.dropLast()), Set(PlaybackMode.basic))
         XCTAssertEqual(Set(PlaybackMode.allCases.map(\.symbol)).count, PlaybackMode.allCases.count)
         store.cyclePlaybackMode()
         XCTAssertEqual(PlayerStore(quran: quran, defaults: defaults).playbackMode, store.playbackMode)

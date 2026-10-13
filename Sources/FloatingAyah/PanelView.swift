@@ -75,7 +75,7 @@ struct PanelView: View {
             .overlay(alignment: .bottom) {
                 HStack(spacing: 4) {
                     control(store.playbackMode.symbol,
-                            label: "Playback mode: \(store.playbackMode.title). Click to change.",
+                            label: "Playback mode: \(store.playbackModeTitle). Click to change.",
                             action: store.cyclePlaybackMode)
                         .foregroundStyle(store.playbackMode == .continuous ? Color.white : Color.accentColor)
                     Spacer(minLength: 0)

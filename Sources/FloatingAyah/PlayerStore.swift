@@ -39,6 +39,14 @@ final class PlayerStore: ObservableObject {
         get { playbackMode == .repeatAyah }
         set { playbackMode = newValue ? .repeatAyah : .continuous }
     }
+    /// The ayahs `.repeatRange` loops, kept after the mode ends so the menu can offer it again.
+    @Published private(set) var repeatRange: AyahRange?
+    private var modeBeforeRange: PlaybackMode = .continuous
+    var playbackModeTitle: String {
+        guard playbackMode == .repeatRange, let range = repeatRange else { return playbackMode.title }
+        return range.first == range.last ? "Repeat ayah \(range.first + 1)"
+            : "Repeat ayahs \(range.first + 1)–\(range.last + 1)"
+    }
     @Published var fontSize: Double {
         didSet { defaults.set(fontSize, forKey: "fontSize") }
     }
@@ -180,7 +188,8 @@ final class PlayerStore: ObservableObject {
         if isBuffering { return "Loading audio…" }
         if !canPlay { return "Not recorded by \(reciter.name)" }
         if finishedSurah {
-            if reciter.isLocal, quran.nextEntry(after: currentEntry, mode: playbackMode).flatMap(playable) == nil,
+            if reciter.isLocal,
+               quran.nextEntry(after: currentEntry, mode: playbackMode, range: repeatRange).flatMap(playable) == nil,
                playbackMode != .repeatAyah {
                 return "End of available recitation"
             }
@@ -200,7 +209,15 @@ final class PlayerStore: ObservableObject {
         reciter = selectedReciter
         self.offline = offline ?? OfflineAudio(quran: quran, reciter: selectedReciter)
         self.defaults = defaults
-        playbackMode = PlaybackMode(rawValue: defaults.string(forKey: "playbackMode") ?? "") ?? .continuous
+        var savedRange: AyahRange?
+        if let saved = defaults.array(forKey: "repeatRange") as? [Int], saved.count == 3, saved[1] <= saved[2],
+           quran.contains(AyahPosition(surah: saved[0], ayah: saved[1])),
+           quran.contains(AyahPosition(surah: saved[0], ayah: saved[2])) {
+            savedRange = AyahRange(surah: saved[0], first: saved[1], last: saved[2])
+        }
+        repeatRange = savedRange
+        let savedMode = PlaybackMode(rawValue: defaults.string(forKey: "playbackMode") ?? "") ?? .continuous
+        playbackMode = savedMode == .repeatRange && savedRange == nil ? .continuous : savedMode
         fontName = ArabicFonts.resolvedName(defaults.string(forKey: "fontName"))
         appearance = LyricAppearance.load(from: defaults)
         wordTimings = try? WordTimings.load(reciter: selectedReciter)
@@ -277,6 +294,8 @@ final class PlayerStore: ObservableObject {
         let selected = AyahPosition(surah: index, ayah: ayahIndex)
         guard quran.contains(selected) else { return }
         sample.stop()
+        // A range belongs to one surah, so going to another ends it.
+        if playbackMode == .repeatRange, repeatRange?.surah != index { playbackMode = modeBeforeRange }
         position = selected
         isBasmalah = opensWithBasmalah(selected)
         isSurahPause = false
@@ -315,7 +334,27 @@ final class PlayerStore: ObservableObject {
         open(surah: next)
     }
 
-    func cyclePlaybackMode() { playbackMode = playbackMode.cycled }
+    func cyclePlaybackMode() {
+        if playbackMode == .repeatRange { stopRepeatingRange() } else { playbackMode = playbackMode.cycled }
+    }
+
+    /// Loops ayahs `first...last` (zero-based) of the current surah and moves to `first`.
+    func repeatAyahs(from first: Int, to last: Int) {
+        let range = AyahRange(surah: position.surah, first: first, last: last)
+        guard first <= last, quran.contains(range.start),
+              quran.contains(AyahPosition(surah: range.surah, ayah: last)) else { return }
+        if playbackMode != .repeatRange { modeBeforeRange = playbackMode }
+        repeatRange = range
+        defaults.set([range.surah, range.first, range.last], forKey: "repeatRange")
+        playbackMode = .repeatRange
+        select(surah: range.surah, ayah: first)
+    }
+
+    /// Returns to the mode that was active before the range started.
+    func stopRepeatingRange() {
+        guard playbackMode == .repeatRange else { return }
+        playbackMode = modeBeforeRange
+    }
 
     func previous() {
         // First press restarts this ayah; a second press goes back one.
@@ -418,7 +457,8 @@ final class PlayerStore: ObservableObject {
         guard player.items().count < 2,
               let last = player.items().last,
               let lastPosition = positions[ObjectIdentifier(last)],
-              let next = quran.nextEntry(after: lastPosition, mode: playbackMode).flatMap(playable) else { return }
+              let next = quran.nextEntry(after: lastPosition, mode: playbackMode, range: repeatRange)
+                .flatMap(playable) else { return }
         player.insert(makeItem(for: next), after: last)
     }
 

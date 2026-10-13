@@ -29,7 +29,7 @@ By [Kiat Koding](https://kiatkoding.com).
 - **Complete Quran text:** all 114 surahs and 6,236 ayahs are bundled, along with word timing data.
 - **Six reciters:** Mishary Rashid Alafasy, Mahmoud Khalil Al-Husary, Mohamed Siddiq Al-Minshawi, Abdul Basit Abdus Samad, Abdurrahman As-Sudais, and Abu Bakr Ash-Shatri.
 - **Offline recitation:** download the selected reciter's entire Quran; resume interrupted downloads without fetching completed files again.
-- **Flexible playback:** continuous playback, stop at the end of a surah, repeat the current ayah, or repeat an entire surah.
+- **Flexible playback:** continuous playback, stop at the end of a surah, repeat the current ayah, repeat a range of ayahs, or repeat an entire surah.
 - **Surah openings:** separate basmalah playback where applicable, with a one-second pause and a clean lyric transition at surah boundaries. At-Tawbah has no added basmalah.
 - **Adjustable appearance:** bundled Amiri Quran font, installed Arabic fonts, text size and color, line spacing, ayah number size, panel width, and shadows.
 - **Native desktop controls:** drag the panel anywhere, click its text to play or pause, and reveal controls on hover. Preferences and panel position persist.
@@ -115,8 +115,10 @@ capture or Accessibility permission is required.
 - **Stop at end of surah:** stop after the selected surah's final ayah.
 - **Repeat current ayah:** loop the numbered ayah; an opening basmalah plays once where applicable.
 - **Repeat surah:** continue through the selected surah, then return to its opening after a one-second pause.
+- **Repeat ayah range:** loop a range of ayahs in the selected surah, set under **Repeat ayahs** in the
+  menu. A range that starts at ayah 1 plays the opening basmalah once. Going to another surah ends it.
 
-The panel's repeat-one button toggles ayah repeat versus continuous playback.
+The panel's mode button cycles through the first four modes; during a range repeat it ends the range.
 Manual previous/next navigation can cross surah boundaries. Switching reciters
 restarts the selected ayah with that reciter's audio and timestamps. Sample
 playback never automatically resumes the main player.

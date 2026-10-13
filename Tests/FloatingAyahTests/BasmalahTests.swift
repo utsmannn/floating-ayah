@@ -8,7 +8,7 @@ final class BasmalahTests: XCTestCase {
             throw XCTSkip("Opt in to validate six basmalah recordings")
         }
         let quran = try Quran.load()
-        for reciter in Reciter.allCases {
+        for reciter in Reciter.bundled {
             let opening = quran.openingEntry(at: AyahPosition(surah: 1, ayah: 0))
             let url = quran.audioURL(at: quran.audioPosition(for: opening), reciter: reciter)
             let (temporary, response) = try await URLSession.shared.download(from: url)
@@ -81,7 +81,7 @@ final class BasmalahTests: XCTestCase {
     func testOpeningAndAyahUseTheirOwnTimingsForAllReciters() throws {
         let quran = try Quran.load()
         let position = AyahPosition(surah: 1, ayah: 0)
-        for reciter in Reciter.allCases {
+        for reciter in Reciter.bundled {
             let timings = try WordTimings.load(reciter: reciter)
             let basmalah = try XCTUnwrap(quran.basmalah(at: position))
             let marker = try XCTUnwrap(timings.range(surah: 1, ayah: 1, seconds: 100, text: basmalah))

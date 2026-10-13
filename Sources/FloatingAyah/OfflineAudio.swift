@@ -11,6 +11,11 @@ struct AudioFiles {
         return AudioFiles(root: support.appendingPathComponent("FloatingAyah/Audio/\(reciter.rawValue)", isDirectory: true))
     }
 
+    /// Written last by the local reciter installer, so a half-copied folder never shows up.
+    var manifest: URL { root.appendingPathComponent("manifest.json") }
+    var timings: URL { root.appendingPathComponent("timings.json") }
+    var isInstalled: Bool { FileManager.default.fileExists(atPath: manifest.path) }
+
     func url(surah: Int, ayah: Int) -> URL {
         root.appendingPathComponent(String(format: "%03d", surah), isDirectory: true)
             .appendingPathComponent(String(format: "%03d%03d.mp3", surah, ayah))
@@ -67,6 +72,8 @@ final class OfflineAudio: ObservableObject {
     private(set) var files: AudioFiles
     @Published private(set) var reciter: Reciter
     @Published private(set) var counts: [Int: Int] = [:]
+    /// Saved ayahs as surah * 1000 + ayah numbers, for per-ayah availability of local reciters.
+    @Published private(set) var savedKeys: Set<Int> = []
     @Published private(set) var downloadingSurah: Int?
     @Published private(set) var completed = 0
     @Published private(set) var total = 0
@@ -79,6 +86,8 @@ final class OfflineAudio: ObservableObject {
     var isDownloading: Bool { task != nil }
     var progress: Double { total > 0 ? Double(completed) / Double(total) : 0 }
     var savedAyahs: Int { counts.values.reduce(0, +) }
+
+    func isSaved(surah: Int, ayah: Int) -> Bool { savedKeys.contains(surah * 1000 + ayah) }
 
     init(quran: Quran, files: AudioFiles? = nil, session: URLSession = .shared, reciter: Reciter = .alafasy) {
         self.reciter = reciter
@@ -102,7 +111,16 @@ final class OfflineAudio: ObservableObject {
     }
 
     func refresh(quran: Quran) {
-        counts = Dictionary(uniqueKeysWithValues: quran.surahs.map { ($0.number, files.count(in: $0)) })
+        var keys = Set<Int>()
+        for surah in quran.surahs {
+            for ayah in surah.ayahs where files.localURL(surah: surah.number, ayah: ayah.number) != nil {
+                keys.insert(surah.number * 1000 + ayah.number)
+            }
+        }
+        savedKeys = keys
+        counts = Dictionary(uniqueKeysWithValues: quran.surahs.map { surah in
+            (surah.number, surah.ayahs.filter { keys.contains(surah.number * 1000 + $0.number) }.count)
+        })
         savedBytes = quran.surahs.reduce(0) { total, surah in
             total + surah.ayahs.reduce(0) { $0 + files.size(surah: surah.number, ayah: $1.number) }
         }
@@ -137,6 +155,7 @@ final class OfflineAudio: ObservableObject {
                         self.completed += 1
                         self.savedBytes += self.files.size(surah: surah.number, ayah: ayah.number)
                         self.counts[surah.number, default: 0] += 1
+                        self.savedKeys.insert(surah.number * 1000 + ayah.number)
                     }
                 }
             } catch {

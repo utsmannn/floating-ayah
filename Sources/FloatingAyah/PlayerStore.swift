@@ -124,8 +124,53 @@ final class PlayerStore: ObservableObject {
     }
     var previousAyahLabel: String { isAtAyahStart ? "Previous ayah" : "Restart ayah" }
     var previousSurahLabel: String { isAtSurahStart ? "Previous surah" : "Restart surah" }
-    var canGoPrevious: Bool { !isAtAyahStart || quran.previousInQuran(before: position) != nil }
-    var canGoNext: Bool { isBasmalah || quran.nextInQuran(after: position) != nil }
+    var canGoPrevious: Bool { !isAtAyahStart || previousAvailable(before: position) != nil }
+    var canGoNext: Bool { (isBasmalah && isAvailable(position)) || nextAvailable(after: position) != nil }
+
+    // MARK: Availability
+
+    /// EveryAyah reciters stream every ayah. A local reciter has only the ayahs it recorded.
+    func isAvailable(_ position: AyahPosition) -> Bool {
+        guard reciter.isLocal else { return true }
+        guard quran.contains(position) else { return false }
+        let surah = quran.surahs[position.surah]
+        return offline.isSaved(surah: surah.number, ayah: surah.ayahs[position.ayah].number)
+    }
+
+    func availableCount(inSurah index: Int) -> Int {
+        let surah = quran.surahs[index]
+        return reciter.isLocal ? offline.counts[surah.number] ?? 0 : surah.ayahs.count
+    }
+
+    var canPlay: Bool { isSurahPause || isAvailable(position) }
+
+    private func nextAvailable(after start: AyahPosition) -> AyahPosition? {
+        var candidate = quran.nextInQuran(after: start)
+        while let position = candidate, !isAvailable(position) { candidate = quran.nextInQuran(after: position) }
+        return candidate
+    }
+
+    private func previousAvailable(before start: AyahPosition) -> AyahPosition? {
+        var candidate = quran.previousInQuran(before: start)
+        while let position = candidate, !isAvailable(position) { candidate = quran.previousInQuran(before: position) }
+        return candidate
+    }
+
+    private func firstAvailable(inSurah index: Int) -> AyahPosition? {
+        quran.surahs[index].ayahs.indices.map { AyahPosition(surah: index, ayah: $0) }.first(where: isAvailable)
+    }
+
+    /// The opening basmalah plays Al-Fatihah 1:1; without that recording, a surah starts at ayah 1.
+    private func opensWithBasmalah(_ position: AyahPosition) -> Bool {
+        quran.basmalah(at: position) != nil && isAvailable(AyahPosition(surah: 0, ayah: 0))
+    }
+
+    /// The entry adjusted to the recordings, or nil when its ayah was not recorded.
+    private func playable(_ entry: PlaybackEntry) -> PlaybackEntry? {
+        guard isAvailable(entry.position) else { return nil }
+        guard entry.isBasmalah, !opensWithBasmalah(entry.position) else { return entry }
+        return PlaybackEntry(position: entry.position, isBasmalah: false, isSurahPause: entry.isSurahPause)
+    }
     var progress: Double { duration > 0 ? min(1, elapsed / duration) : 0 }
     var actionLabel: String { isPlaying ? "Pause" : "Play" }
     var actionIcon: String { isPlaying ? "pause.fill" : "play.fill" }
@@ -133,7 +178,14 @@ final class PlayerStore: ObservableObject {
         if errorMessage != nil { return "Unable to load audio" }
         if isSurahPause { return playbackMode == .repeatSurah ? "Repeating surah…" : "Next surah…" }
         if isBuffering { return "Loading audio…" }
-        if finishedSurah { return playbackMode == .continuous ? "Quran completed" : "Surah completed" }
+        if !canPlay { return "Not recorded by \(reciter.name)" }
+        if finishedSurah {
+            if reciter.isLocal, quran.nextEntry(after: currentEntry, mode: playbackMode).flatMap(playable) == nil,
+               playbackMode != .repeatAyah {
+                return "End of available recitation"
+            }
+            return playbackMode == .continuous ? "Quran completed" : "Surah completed"
+        }
         return isPlaying ? reciter.name : "Click the ayah to play"
     }
 
@@ -141,7 +193,10 @@ final class PlayerStore: ObservableObject {
          player: AVQueuePlayer = AVQueuePlayer()) {
         self.player = player
         self.quran = quran
-        let selectedReciter = offline?.reciter ?? Reciter(rawValue: defaults.string(forKey: "reciter") ?? "") ?? .alafasy
+        let savedReciter = Reciter(rawValue: defaults.string(forKey: "reciter") ?? "")
+        // A local reciter whose recordings were removed falls back to the default.
+        let selectedReciter = offline?.reciter
+            ?? savedReciter.flatMap { Reciter.available.contains($0) ? $0 : nil } ?? .alafasy
         reciter = selectedReciter
         self.offline = offline ?? OfflineAudio(quran: quran, reciter: selectedReciter)
         self.defaults = defaults
@@ -152,9 +207,9 @@ final class PlayerStore: ObservableObject {
         let saved = AyahPosition(surah: defaults.integer(forKey: "surah"), ayah: defaults.integer(forKey: "ayah"))
         let initialPosition = quran.contains(saved) ? saved : AyahPosition(surah: 0, ayah: 0)
         position = initialPosition
-        isBasmalah = quran.basmalah(at: initialPosition) != nil
         let savedSize = defaults.double(forKey: "fontSize")
         fontSize = savedSize == 0 ? 30 : min(42, max(22, savedSize))
+        isBasmalah = opensWithBasmalah(initialPosition)
         player.automaticallyWaitsToMinimizeStalling = true
         observations = [
             player.observe(\.currentItem, options: [.new]) { [weak self] _, _ in
@@ -203,7 +258,7 @@ final class PlayerStore: ObservableObject {
 
     func play() {
         sample.stop()
-        guard !isPlaying else { return }
+        guard !isPlaying, canPlay else { return }
         if player.currentItem == nil || errorMessage != nil || finishedSurah {
             rebuildQueue(play: true)
         } else if let local = localURL(for: currentEntry),
@@ -223,33 +278,49 @@ final class PlayerStore: ObservableObject {
         guard quran.contains(selected) else { return }
         sample.stop()
         position = selected
-        isBasmalah = quran.basmalah(at: selected) != nil
+        isBasmalah = opensWithBasmalah(selected)
         isSurahPause = false
         rememberPosition()
         rebuildQueue(play: isPlaying)
     }
 
-    var canGoPreviousSurah: Bool { !isAtSurahStart || position.surah > 0 }
-    var canGoNextSurah: Bool { position.surah < quran.surahs.count - 1 }
+    var canGoPreviousSurah: Bool { !isAtSurahStart || surahWithRecording(before: position.surah) != nil }
+    var canGoNextSurah: Bool { surahWithRecording(after: position.surah) != nil }
+
+    /// Opens a surah at its first recorded ayah. Returns false when none of it was recorded.
+    @discardableResult
+    func open(surah index: Int) -> Bool {
+        guard quran.surahs.indices.contains(index), let first = firstAvailable(inSurah: index) else { return false }
+        select(surah: index, ayah: first.ayah)
+        return true
+    }
+
+    private func surahWithRecording(after index: Int) -> Int? {
+        (index + 1..<quran.surahs.count).first { availableCount(inSurah: $0) > 0 }
+    }
+
+    private func surahWithRecording(before index: Int) -> Int? {
+        (0..<index).last { availableCount(inSurah: $0) > 0 }
+    }
 
     func previousSurah() {
         // First press returns to the start of this surah; a second press goes back one.
-        if !isAtSurahStart { select(surah: position.surah); return }
-        guard position.surah > 0 else { return }
-        select(surah: position.surah - 1)
+        if !isAtSurahStart, open(surah: position.surah) { return }
+        guard let previous = surahWithRecording(before: position.surah) else { return }
+        open(surah: previous)
     }
 
     func nextSurah() {
-        guard canGoNextSurah else { return }
-        select(surah: position.surah + 1)
+        guard let next = surahWithRecording(after: position.surah) else { return }
+        open(surah: next)
     }
 
     func cyclePlaybackMode() { playbackMode = playbackMode.cycled }
 
     func previous() {
         // First press restarts this ayah; a second press goes back one.
-        if !isAtAyahStart { rebuildQueue(play: isPlaying); return }
-        guard let previous = quran.previousInQuran(before: position) else { return }
+        if !isAtAyahStart, canPlay { rebuildQueue(play: isPlaying); return }
+        guard let previous = previousAvailable(before: position) else { return }
         select(surah: previous.surah, ayah: previous.ayah)
     }
 
@@ -259,12 +330,12 @@ final class PlayerStore: ObservableObject {
             rebuildQueue(play: isPlaying)
             return
         }
-        if isBasmalah {
+        if isBasmalah, isAvailable(position) {
             isBasmalah = false
             rebuildQueue(play: isPlaying)
             return
         }
-        guard let next = quran.nextInQuran(after: position) else { return }
+        guard let next = nextAvailable(after: position) else { return }
         select(surah: next.surah, ayah: next.ayah)
     }
 
@@ -277,9 +348,9 @@ final class PlayerStore: ObservableObject {
         reciter = selected
         defaults.set(selected.rawValue, forKey: "reciter")
         wordTimings = try? WordTimings.load(reciter: selected)
-        isBasmalah = quran.basmalah(at: position) != nil
-        isSurahPause = false
         offline.select(reciter: selected, quran: quran)
+        isBasmalah = opensWithBasmalah(position)
+        isSurahPause = false
         // Same verse, but start at zero: timing from one qari isn't transferable.
         if player.currentItem != nil { rebuildQueue(play: continuePlayback) }
         else { readingRange = nil; elapsed = 0; duration = 0 }
@@ -325,6 +396,11 @@ final class PlayerStore: ObservableObject {
         elapsed = 0
         duration = 0
         readingRange = nil
+        guard canPlay else {
+            isPlaying = false
+            isBuffering = false
+            return
+        }
         let item = makeItem(for: currentEntry)
         player.insert(item, after: nil)
         enqueueNext()
@@ -342,7 +418,7 @@ final class PlayerStore: ObservableObject {
         guard player.items().count < 2,
               let last = player.items().last,
               let lastPosition = positions[ObjectIdentifier(last)],
-              let next = quran.nextEntry(after: lastPosition, mode: playbackMode) else { return }
+              let next = quran.nextEntry(after: lastPosition, mode: playbackMode).flatMap(playable) else { return }
         player.insert(makeItem(for: next), after: last)
     }
 

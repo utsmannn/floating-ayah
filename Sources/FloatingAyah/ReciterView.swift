@@ -12,7 +12,7 @@ struct ReciterView: View {
                 Text("Reciter")
                 Spacer()
                 Menu {
-                    ForEach(Reciter.allCases) { reciter in
+                    ForEach(Reciter.available) { reciter in
                         Button {
                             store.selectReciter(reciter)
                         } label: {

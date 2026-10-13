@@ -5,9 +5,9 @@ import XCTest
 final class ReciterTests: XCTestCase {
     func testEachCollectionHasMatchingURLsTimingsSizesAndIsolatedStorage() throws {
         let quran = try Quran.load()
-        XCTAssertEqual(Reciter.allCases.count, 6)
+        XCTAssertEqual(Reciter.bundled.count, 6)
         var roots = Set<URL>()
-        for reciter in Reciter.allCases {
+        for reciter in Reciter.bundled {
             let url = quran.audioURL(at: AyahPosition(surah: 0, ayah: 1), reciter: reciter)
             XCTAssertEqual(url.lastPathComponent, "001002.mp3")
             XCTAssertTrue(url.path.contains(reciter.rawValue))
@@ -71,7 +71,7 @@ final class ReciterTests: XCTestCase {
             throw XCTSkip("Opt in to download six small preview clips and decode them locally")
         }
         let quran = try Quran.load()
-        for reciter in Reciter.allCases {
+        for reciter in Reciter.bundled {
             let url = quran.audioURL(at: AyahPosition(surah: 0, ayah: 1), reciter: reciter)
             let (file, response) = try await URLSession.shared.download(from: url)
             defer { try? FileManager.default.removeItem(at: file) }

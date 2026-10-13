@@ -85,6 +85,7 @@ struct PanelView: View {
                         .disabled(!store.canGoPrevious)
                     control(store.actionIcon, label: store.actionLabel, action: store.togglePlayback)
                         .keyboardShortcut(.space, modifiers: [])
+                        .disabled(!store.canPlay)
                     control("forward.end.fill", label: "Next ayah", action: store.next)
                         .disabled(!store.canGoNext)
                     control("forward.fill", label: "Next surah", action: store.nextSurah)

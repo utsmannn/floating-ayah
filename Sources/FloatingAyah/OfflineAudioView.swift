@@ -23,11 +23,15 @@ struct OfflineAudioView: View {
                 Text("Full download ≈ \(AudioSizes.formatted(totalBytes)) · EveryAyah estimate")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else {
+            } else if !offline.reciter.isLocal {
                 Text("Total size unavailable")
                     .foregroundStyle(.secondary)
             }
-            if let number = offline.downloadingSurah {
+            if offline.reciter.isLocal {
+                Text("Local recordings have no download. Only recorded ayahs can be played; the rest are disabled.")
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if let number = offline.downloadingSurah {
                 let name = quran.surahs.first(where: { $0.number == number })?.name ?? "Surah"
                 Text("Downloading \(name) · \(offline.completed)/\(offline.total)")
                     .foregroundStyle(.secondary)

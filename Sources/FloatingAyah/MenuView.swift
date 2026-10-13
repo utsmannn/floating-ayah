@@ -73,6 +73,7 @@ struct MenuView: View {
                     Image(systemName: store.actionIcon).frame(width: 34, height: 26)
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(!store.canPlay)
                 .help(store.actionLabel)
                 .accessibilityLabel(store.actionLabel)
                 transport("forward.end.fill", "Next ayah", enabled: store.canGoNext, action: store.next)

@@ -51,8 +51,12 @@ struct WordTimings {
     let ayahs: [String: TimedAyah]
 
     static func load(reciter: Reciter = .alafasy) throws -> WordTimings {
-        let bundle = Quran.resourceBundle
-        guard let url = bundle.url(forResource: reciter.timingResource, withExtension: "json") else {
+        let url: URL
+        if reciter.isLocal {
+            url = AudioFiles.standard(reciter: reciter).timings
+        } else if let bundled = Quran.resourceBundle.url(forResource: reciter.timingResource, withExtension: "json") {
+            url = bundled
+        } else {
             throw CocoaError(.fileNoSuchFile)
         }
         let data = try JSONDecoder().decode([TimedAyah].self, from: Data(contentsOf: url))

@@ -46,11 +46,13 @@ struct SurahPicker: View {
                         }
                         ForEach(results) { surah in
                             let selected = surah.number == store.surah.number
+                            let recorded = store.availableCount(inSurah: surah.number - 1)
                             Button { choose(surah) } label: {
                                 HStack {
                                     Text("\(surah.number). \(surah.name)")
                                     Spacer()
-                                    Text("\(surah.ayahs.count)").foregroundStyle(.secondary).monospacedDigit()
+                                    Text(recorded == surah.ayahs.count ? "\(surah.ayahs.count)" : "\(recorded)/\(surah.ayahs.count)")
+                                        .foregroundStyle(.secondary).monospacedDigit()
                                     if selected { Image(systemName: "checkmark") }
                                 }
                                 .foregroundStyle(.primary)
@@ -60,6 +62,9 @@ struct SurahPicker: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
+                            .disabled(recorded == 0)
+                            .opacity(recorded == 0 ? 0.4 : 1)
+                            .help(recorded == 0 ? "Not recorded by \(store.reciter.name)" : "")
                             .id(surah.number)
                         }
                     }
@@ -76,7 +81,7 @@ struct SurahPicker: View {
     }
 
     private func choose(_ surah: Surah) {
-        store.select(surah: surah.number - 1)
+        guard store.open(surah: surah.number - 1) else { return }
         showing = false
         onSelect()
     }
@@ -87,6 +92,7 @@ struct AyahInput: View {
     let onSelect: () -> Void
     @State private var text = ""
     @State private var invalid = false
+    @State private var unrecorded = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -99,14 +105,18 @@ struct AyahInput: View {
             Button("Go", action: commit).disabled(text.isEmpty)
             if invalid {
                 Text("Enter 1–\(store.surah.ayahs.count)").font(.system(size: 11)).foregroundStyle(.red)
+            } else if unrecorded {
+                Text("Not recorded").font(.system(size: 11)).foregroundStyle(.red)
             }
         }
     }
 
     private func commit() {
         guard let number = Int(text.trimmingCharacters(in: .whitespaces)),
-              (1...store.surah.ayahs.count).contains(number) else { invalid = true; return }
+              (1...store.surah.ayahs.count).contains(number) else { invalid = true; unrecorded = false; return }
         invalid = false
+        unrecorded = !store.isAvailable(AyahPosition(surah: store.position.surah, ayah: number - 1))
+        guard !unrecorded else { return }
         store.select(surah: store.position.surah, ayah: number - 1)
         text = ""
         onSelect()
